@@ -148,6 +148,15 @@
     <Filter Include="AppHost\Debugger">
       <UniqueIdentifier>{7a0a1104-f9ee-4cd1-aaba-f8267eba1658}</UniqueIdentifier>
     </Filter>
+    <Filter Include="AppHost\Netplay">
+      <UniqueIdentifier>{2b52fc9f-401d-43a5-b514-fc1e042d09e1}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AppHost\Netplay\shoryu">
+      <UniqueIdentifier>{7fc7f0a9-c42d-4a6e-9379-59d7561c74e2}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="AppHost\Netplay\gui">
+      <UniqueIdentifier>{c30819c8-e27d-42e8-8624-2b5b1f1c376a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\Utilities\folderdesc.txt">
@@ -871,6 +880,48 @@
     <ClCompile Include="..\..\ps2\Iop\PsxBios.cpp">
       <Filter>System\Ps2\Iop</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\Netplay\gui\NetplayDialog.cpp">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\gui\NetplayDialogBase.cpp">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\NetplayPlugin.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\EmulatorState.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\Message.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\NetplaySettings.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\gui\NetplaySettingsPanel.cpp">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\INetplayDialog.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\gui\InputDelayPanel.cpp">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\ReplayPlugin.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\IOPHook.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\ReplaySettings.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\Utilities.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\Replay.cpp">
+      <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\Patch.h">
@@ -1224,8 +1275,71 @@
     <ClInclude Include="..\..\Gif_Unit.h">
       <Filter>System\Ps2\GS</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Netplay\gui\NetplayDialog.h">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\gui\NetplayDialogBase.h">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\archive.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\async_transport.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\boost_extensions.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\datagram_header.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\peer.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\session.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\shoryu\tools.h">
+      <Filter>AppHost\Netplay\shoryu</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\NetplayPlugin.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\EmulatorState.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\Message.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\INetplayDialog.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\NetplaySettings.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\gui\NetplaySettingsPanel.h">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\gui\InputDelayPanel.h">
+      <Filter>AppHost\Netplay\gui</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\IOPHook.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\ReplayPlugin.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
     <ClInclude Include="..\..\x86\microVU_Profiler.h">
       <Filter>System\Ps2\EmotionEngine\VU\Dynarec\microVU</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\ReplaySettings.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\Utilities.h">
+      <Filter>AppHost\Netplay</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\Replay.h">
+      <Filter>AppHost\Netplay</Filter>
     </ClInclude>
     <ClInclude Include="..\..\AsyncFileReader.h">
       <Filter>System\ISO</Filter>

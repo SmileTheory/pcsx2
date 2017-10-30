@@ -99,4 +99,83 @@ void UI_EnableStateActions()
 	_SaveLoadStuff( true );
 }
 
+// Disanble MenuItems that can disrupt netplay
+void UI_DisableEverything()
+{
+	sMainFrame.EnableMenuItem( MenuId_Config_SysSettings, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_McdSettings, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_AppSettings, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_GameDatabase, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_BIOS, 	false );
+	sMainFrame.EnableMenuItem( MenuId_Config_Language, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_ResetAll, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_Multitap0Toggle, false );
+	sMainFrame.EnableMenuItem( MenuId_Config_Multitap1Toggle, false );
+	sMainFrame.EnableMenuItem( MenuId_Video_WindowSettings, false );
+	sMainFrame.EnableMenuItem( MenuId_Video_CoreSettings, 	false );
+	for( int i = 0; i < PluginId_Count; ++i )
+	{
+		sMainFrame.EnableMenuItem( MenuId_Config_GS+i, false );
+		sMainFrame.EnableMenuItem( MenuId_PluginBase_Settings + (i*PluginMenuId_Interval), false );
+	}
+	for( int i = 0; i < 3; ++i )
+		sMainFrame.EnableMenuItem(MenuId_Src_Iso+i, false );
 
+	sMainFrame.EnableMenuItem( MenuId_Boot_CDVD, false );
+	sMainFrame.EnableMenuItem( MenuId_Boot_CDVD2, false );
+	sMainFrame.EnableMenuItem( MenuId_Boot_Net, false );
+	sMainFrame.EnableMenuItem( MenuId_Boot_Replay, false );
+	sMainFrame.EnableMenuItem( MenuId_Boot_ELF, false );
+	sMainFrame.EnableMenuItem( MenuId_IsoBrowse, false );
+	sMainFrame.EnableMenuItem( MenuId_EnableBackupStates, false );
+	sMainFrame.EnableMenuItem( MenuId_EnablePatches, false );
+	sMainFrame.EnableMenuItem( MenuId_EnableCheats, false );
+	sMainFrame.EnableMenuItem( MenuId_EnableHostFs, false );
+	sMainFrame.EnableMenuItem( MenuId_Sys_SuspendResume, false );
+
+	for( int i = 0; i < 10; ++i )
+		sMainFrame.EnableMenuItem( MenuId_State_Save01 + i + 1, false );
+	for( int i = 0; i < 10; ++i )
+		sMainFrame.EnableMenuItem( MenuId_State_Load01 + i + 1, false );
+	sMainFrame.EnableMenuItem( MenuId_State_LoadBackup, false );
+}
+
+void UI_EnableEverything()
+{
+	sMainFrame.EnableMenuItem( MenuId_Config_SysSettings, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_McdSettings, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_AppSettings, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_GameDatabase, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_BIOS, 	true );
+	sMainFrame.EnableMenuItem( MenuId_Config_Language, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_ResetAll, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_Multitap0Toggle, true );
+	sMainFrame.EnableMenuItem( MenuId_Config_Multitap1Toggle, true );
+	sMainFrame.EnableMenuItem( MenuId_Video_WindowSettings, true );
+	sMainFrame.EnableMenuItem( MenuId_Video_CoreSettings, 	true );
+	for( int i = 0; i < PluginId_Count; ++i )
+	{
+		sMainFrame.EnableMenuItem( MenuId_Config_GS+i, true );
+		sMainFrame.EnableMenuItem( MenuId_PluginBase_Settings + (i*PluginMenuId_Interval), true );
+	}
+	for( int i = 0; i < 3; ++i )
+		sMainFrame.EnableMenuItem(MenuId_Src_Iso+i, true );
+
+	sMainFrame.EnableMenuItem( MenuId_Boot_CDVD, true );
+	sMainFrame.EnableMenuItem( MenuId_Boot_CDVD2, true );
+	sMainFrame.EnableMenuItem( MenuId_Boot_Net, true );
+	sMainFrame.EnableMenuItem( MenuId_Boot_Replay, true );
+	sMainFrame.EnableMenuItem( MenuId_Boot_ELF, true );
+	sMainFrame.EnableMenuItem( MenuId_IsoBrowse, true );
+	sMainFrame.EnableMenuItem( MenuId_EnableBackupStates, true );
+	sMainFrame.EnableMenuItem( MenuId_EnablePatches, true );
+	sMainFrame.EnableMenuItem( MenuId_EnableCheats, true );
+	sMainFrame.EnableMenuItem( MenuId_EnableHostFs, true );
+	sMainFrame.EnableMenuItem( MenuId_Sys_SuspendResume, true );
+
+	for( int i = 0; i < 10; ++i )
+		sMainFrame.EnableMenuItem( MenuId_State_Save01 + i + 1, true );
+	for( int i = 0; i < 10; ++i )
+		sMainFrame.EnableMenuItem( MenuId_State_Load01 + i + 1, true );
+	sMainFrame.EnableMenuItem( MenuId_State_LoadBackup, true );
+}

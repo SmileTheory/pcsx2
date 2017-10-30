@@ -24,7 +24,13 @@
 #include "Gif.h"
 #include "CDVD/CDVDisoReader.h"
 
+#include "Netplay/NetplayPlugin.h"
+#include "Netplay/ReplayPlugin.h"
+#include "Netplay/INetplayDialog.h"
+#include "Netplay/Utilities.h"
+
 #include "Utilities/pxStreams.h"
+#include "Netplay/IOPHook.h"
 
 #include "svnrev.h"
 #include "ConsoleLogger.h"
@@ -1339,6 +1345,31 @@ void SysCorePlugins::Open()
 {
 	Init();
 
+	if(g_Conf->Net.IsEnabled && !INetplayPlugin::GetInstance().IsInit())
+	{
+		INetplayDialog* dialog = INetplayDialog::GetInstance();
+		Utilities::ExecuteOnMainThread([&]() {
+			if(dialog->IsShown())
+				dialog->Close();
+			wxMessageBox(
+				wxT("It is advised to start Netplay only on clean emulator boot. Restart emulator and try again."),
+				wxT("Netplay"),
+				wxOK, (wxWindow*)GetMainFramePtr());
+			CoreThread.Reset();
+		});
+	}
+
+	if(g_Conf->Replay.IsEnabled && !IReplayPlugin::GetInstance().IsInit()) 
+	{
+		Utilities::ExecuteOnMainThread([&]() {
+			wxMessageBox(
+				wxT("It is advised to start Replay playback only on clean emulator boot. Restart emulator and try again."),
+				wxT("Replay"),
+				wxOK, (wxWindow*)GetMainFramePtr());
+			CoreThread.Reset();
+		});
+	}
+
 	if( !NeedsOpen() ) return;		// Spam stopper:  returns before writing any logs. >_<
 
 	Console.WriteLn( Color_StrongBlue, "Opening plugins..." );
@@ -1368,6 +1399,21 @@ void SysCorePlugins::Open()
 		DbgCon.Indent().WriteLn( "Opening Memorycards");
 		OpenPlugin_Mcd();
 	}
+
+	if(g_Conf->Replay.IsEnabled)
+	{
+		HookIOP(&IReplayPlugin::GetInstance());
+		DbgCon.Indent().WriteLn( "Opening Replay" );
+		IReplayPlugin::GetInstance().Open();
+	}
+	else if(g_Conf->Net.IsEnabled)
+	{
+		HookIOP(&INetplayPlugin::GetInstance());
+		DbgCon.Indent().WriteLn( "Opening Netplay" );
+		INetplayPlugin::GetInstance().Open();
+	}
+	else
+		HookIOP(0);
 
 	Console.WriteLn( Color_StrongBlue, "Plugins opened successfully." );
 }
@@ -1463,6 +1509,24 @@ void SysCorePlugins::Close()
 
 	Console.WriteLn( Color_StrongBlue, "Closing plugins..." );
 
+	UnhookIOP();
+
+	if(g_Conf->Net.IsEnabled) 
+	{
+		DbgCon.Indent().WriteLn( "Closing Netplay");
+		ScopedLock lock( m_mtx_PluginStatus );
+		INetplayPlugin::GetInstance().Close();
+		g_Conf->Net.IsEnabled = false;
+	}
+	
+	if(g_Conf->Replay.IsEnabled) 
+	{
+		DbgCon.Indent().WriteLn( "Closing Replay");
+		ScopedLock lock( m_mtx_PluginStatus );
+		IReplayPlugin::GetInstance().Close();
+		g_Conf->Replay.IsEnabled = false;
+	}
+
 	if( m_mcdOpen.exchange(false) )
 	{
 		DbgCon.Indent().WriteLn( "Closing Memorycards");
@@ -1514,6 +1578,19 @@ bool SysCorePlugins::Init()
 	if( !NeedsInit() ) return false;
 
 	Console.WriteLn( Color_StrongBlue, "Initializing plugins..." );
+
+	if(g_Conf->Net.IsEnabled)
+	{
+		Console.Indent().WriteLn( "Init Net" );
+		INetplayPlugin::GetInstance().Init();
+	}
+
+	if(g_Conf->Replay.IsEnabled) 
+	{
+		DbgCon.Indent().WriteLn( "Init Replay");
+		IReplayPlugin::GetInstance().Init();
+	}
+
 	const PluginInfo* pi = tbl_PluginInfo; do {
 		Init( pi->id );
 	} while( ++pi, pi->shortname != NULL );

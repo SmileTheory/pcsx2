@@ -90,6 +90,8 @@ enum MenuIdentifiers
 	MenuId_Ask_On_Booting,
 	MenuId_Boot_CDVD,
 	MenuId_Boot_CDVD2,
+	MenuId_Boot_Net,
+	MenuId_Boot_Replay,
 	MenuId_Boot_ELF,
 	//MenuId_Boot_Recent,			// Menu populated with recent source bootings
 
@@ -764,6 +766,8 @@ extern void UI_EnableSysActions();
 
 extern void UI_DisableSysShutdown();
 
+extern void UI_DisableEverything();
+extern void UI_EnableEverything();
 
 #define AffinityAssert_AllowFrom_SysExecutor() \
 	pxAssertMsg( wxGetApp().SysExecutorThread.IsSelf(), "Thread affinity violation: Call allowed from SysExecutor thread only." )

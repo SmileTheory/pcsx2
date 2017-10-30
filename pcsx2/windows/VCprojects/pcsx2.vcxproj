@@ -54,6 +54,10 @@
   <PropertyGroup>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>C:\devtools\boost_1_65_1;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\devtools\boost_1_65_1\lib32-msvc-14.1;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectRootDir)/gui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -62,6 +66,8 @@
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>PrecompiledHeader.h</PrecompiledHeaderFile>
       <EnableEnhancedInstructionSet>NoExtensions</EnableEnhancedInstructionSet>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</RuntimeTypeInfo>
     </ClCompile>
     <Link>
       <LargeAddressAware>Yes</LargeAddressAware>
@@ -185,6 +191,20 @@
     <ClCompile Include="..\..\gui\Panels\MemoryCardListView.cpp" />
     <ClCompile Include="..\..\IopGte.cpp" />
     <ClCompile Include="..\..\IPU\IPUdma.cpp" />
+    <ClCompile Include="..\..\Netplay\EmulatorState.cpp" />
+    <ClCompile Include="..\..\Netplay\gui\InputDelayPanel.cpp" />
+    <ClCompile Include="..\..\Netplay\gui\NetplayDialog.cpp" />
+    <ClCompile Include="..\..\Netplay\gui\NetplayDialogBase.cpp" />
+    <ClCompile Include="..\..\Netplay\gui\NetplaySettingsPanel.cpp" />
+    <ClCompile Include="..\..\Netplay\INetplayDialog.cpp" />
+    <ClCompile Include="..\..\Netplay\IOPHook.cpp" />
+    <ClCompile Include="..\..\Netplay\Message.cpp" />
+    <ClCompile Include="..\..\Netplay\NetplayPlugin.cpp" />
+    <ClCompile Include="..\..\Netplay\NetplaySettings.cpp" />
+    <ClCompile Include="..\..\Netplay\Replay.cpp" />
+    <ClCompile Include="..\..\Netplay\ReplayPlugin.cpp" />
+    <ClCompile Include="..\..\Netplay\ReplaySettings.cpp" />
+    <ClCompile Include="..\..\Netplay\Utilities.cpp" />
     <ClCompile Include="..\..\Linux\LnxConsolePipe.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
     </ClCompile>
@@ -443,6 +463,27 @@
     <ClInclude Include="..\..\gui\Panels\MemoryCardPanels.h" />
     <ClInclude Include="..\..\IopGte.h" />
     <ClInclude Include="..\..\IPU\IPUdma.h" />
+    <ClInclude Include="..\..\Netplay\EmulatorState.h" />
+    <ClInclude Include="..\..\Netplay\gui\InputDelayPanel.h" />
+    <ClInclude Include="..\..\Netplay\gui\NetplayDialog.h" />
+    <ClInclude Include="..\..\Netplay\gui\NetplayDialogBase.h" />
+    <ClInclude Include="..\..\Netplay\gui\NetplaySettingsPanel.h" />
+    <ClInclude Include="..\..\Netplay\INetplayDialog.h" />
+    <ClInclude Include="..\..\Netplay\IOPHook.h" />
+    <ClInclude Include="..\..\Netplay\Message.h" />
+    <ClInclude Include="..\..\Netplay\NetplayPlugin.h" />
+    <ClInclude Include="..\..\Netplay\NetplaySettings.h" />
+    <ClInclude Include="..\..\Netplay\Replay.h" />
+    <ClInclude Include="..\..\Netplay\ReplayPlugin.h" />
+    <ClInclude Include="..\..\Netplay\ReplaySettings.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\archive.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\async_transport.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\boost_extensions.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\datagram_header.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\peer.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\session.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\tools.h" />
+    <ClInclude Include="..\..\Netplay\Utilities.h" />
     <ClInclude Include="..\..\Mdec.h" />
     <ClInclude Include="..\..\Patch.h" />
     <ClInclude Include="..\..\PrecompiledHeader.h" />

@@ -16,6 +16,9 @@
 #include "PrecompiledHeader.h"
 #include "Win32.h"
 
+// need this because WIN32_LEAN_AND_MEAN has been defined
+#include <winscard.h>
+
 // Throws an exception based on the value returned from GetLastError.
 // Performs an option return value success/fail check on hresult.
 void StreamException_ThrowLastError( const wxString& streamname, HANDLE result )

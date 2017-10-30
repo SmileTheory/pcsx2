@@ -693,6 +693,7 @@ void AppConfig::LoadSave( IniInterface& ini )
 	GSWindow		.LoadSave( ini );
 	Framerate		.LoadSave( ini );
 	Templates		.LoadSave( ini );
+	Net				.LoadSave( ini );
 
 	ini.Flush();
 }
@@ -968,6 +969,7 @@ void AppConfig::UiTemplateOptions::LoadSave(IniInterface& ini)
 	IniEntry(Paused);
 	IniEntry(TitleTemplate);
 }
+
 
 int AppConfig::GetMaxPresetIndex()
 {

@@ -390,6 +390,23 @@ public:
 	const wxString GetName( PluginsEnum_t pid ) const;
 	const wxString GetVersion( PluginsEnum_t pid ) const;
 
+	virtual bool OpenPlugin_GS();
+	virtual bool OpenPlugin_CDVD();
+	virtual bool OpenPlugin_PAD();
+	virtual bool OpenPlugin_SPU2();
+	virtual bool OpenPlugin_DEV9();
+	virtual bool OpenPlugin_USB();
+	virtual bool OpenPlugin_FW();
+	virtual bool OpenPlugin_Mcd();
+
+	virtual void ClosePlugin_GS();
+	virtual void ClosePlugin_CDVD();
+	virtual void ClosePlugin_PAD();
+	virtual void ClosePlugin_SPU2();
+	virtual void ClosePlugin_DEV9();
+	virtual void ClosePlugin_USB();
+	virtual void ClosePlugin_FW();
+	virtual void ClosePlugin_Mcd();
 protected:
 	virtual bool NeedsClose() const;
 	virtual bool NeedsOpen() const;
@@ -400,25 +417,7 @@ protected:
 	virtual bool NeedsLoad() const;
 	virtual bool NeedsUnload() const;
 
-	virtual bool OpenPlugin_GS();
-	virtual bool OpenPlugin_CDVD();
-	virtual bool OpenPlugin_PAD();
-	virtual bool OpenPlugin_SPU2();
-	virtual bool OpenPlugin_DEV9();
-	virtual bool OpenPlugin_USB();
-	virtual bool OpenPlugin_FW();
-	virtual bool OpenPlugin_Mcd();
-
 	void _generalclose( PluginsEnum_t pid );
-
-	virtual void ClosePlugin_GS();
-	virtual void ClosePlugin_CDVD();
-	virtual void ClosePlugin_PAD();
-	virtual void ClosePlugin_SPU2();
-	virtual void ClosePlugin_DEV9();
-	virtual void ClosePlugin_USB();
-	virtual void ClosePlugin_FW();
-	virtual void ClosePlugin_Mcd();
 
 	friend class SysMtgsThread;
 };

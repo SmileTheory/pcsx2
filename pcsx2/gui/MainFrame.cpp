@@ -22,6 +22,8 @@
 #include "Dialogs/ModalPopups.h"
 #include "IsoDropTarget.h"
 
+#include "Netplay/NetplayPlugin.h"
+
 #include <wx/iconbndl.h>
 
 #include <unordered_map>
@@ -187,6 +189,8 @@ void MainEmuFrame::ConnectMenus()
 	// System
 	Bind(wxEVT_MENU, &MainEmuFrame::Menu_BootCdvd_Click, this, MenuId_Boot_CDVD);
 	Bind(wxEVT_MENU, &MainEmuFrame::Menu_BootCdvd2_Click, this, MenuId_Boot_CDVD2);
+	Bind(wxEVT_MENU, &MainEmuFrame::Menu_BootNet_Click, this, MenuId_Boot_Net);
+	Bind(wxEVT_MENU, &MainEmuFrame::Menu_BootReplay_Click, this, MenuId_Boot_Replay);
 	Bind(wxEVT_MENU, &MainEmuFrame::Menu_OpenELF_Click, this, MenuId_Boot_ELF);
 	Bind(wxEVT_MENU, &MainEmuFrame::Menu_SuspendResume_Click, this, MenuId_Sys_SuspendResume);
 
@@ -353,6 +357,7 @@ MainEmuFrame::MainEmuFrame(wxWindow* parent, const wxString& title)
 	wxSize backsize(m_background.GetBitmap().GetWidth(), m_background.GetBitmap().GetHeight());
 
 	wxString wintitle;
+	/*
 	if( PCSX2_isReleaseVersion )
 	{
 		// stable releases, with a simple title.
@@ -368,6 +373,8 @@ MainEmuFrame::MainEmuFrame(wxWindow* parent, const wxString& title)
 					PCSX2_VersionLo, SVN_REV, SVN_MODS ? L"m" : wxEmptyString );
 		}
 	}
+	*/
+	wintitle.Printf( _("PCSX2 Online-2012.01.22 + PCSX2 2017.10.25") );
 
 	SetTitle( wintitle );
 
@@ -410,6 +417,10 @@ MainEmuFrame::MainEmuFrame(wxWindow* parent, const wxString& title)
 
 	m_menuSys.Append(MenuId_Boot_CDVD2,		_("Initializing..."));
 
+	m_menuSys.Append(MenuId_Boot_Net,		_("Initializing..."));
+
+	m_menuSys.Append(MenuId_Boot_Replay,	_("Initializing..."));
+	
 	m_menuSys.Append(MenuId_Boot_ELF,		_("&Run ELF..."),
 		_("For running raw PS2 binaries directly"));
 
@@ -583,10 +594,16 @@ void MainEmuFrame::ApplyCoreStatus()
 {
 	wxMenuBar& menubar( *GetMenuBar() );
 
+	wxMenuItem* susres = menubar.FindItem(MenuId_Sys_SuspendResume);
+	wxMenuItem* net = menubar.FindItem(MenuId_Boot_Net);
+	wxMenuItem* replay = menubar.FindItem(MenuId_Boot_Replay);
+
 	// [TODO] : Ideally each of these items would bind a listener instance to the AppCoreThread
 	// dispatcher, and modify their states accordingly.  This is just a hack (for now) -- air
 
-	if (wxMenuItem* susres = menubar.FindItem(MenuId_Sys_SuspendResume))
+	bool vm = SysHasValidState();
+
+	if (susres && !g_Conf->Net.IsEnabled && !g_Conf->Replay.IsEnabled)
 	{
 		if( !CoreThread.IsClosing() )
 		{
@@ -648,6 +665,24 @@ void MainEmuFrame::ApplyCoreStatus()
 		{
 			m_menuSys.Insert(1, fastboot_id, label, help_text);
 		}
+	}
+	if( net )
+	{
+		if( vm )
+		{
+			net->SetItemLabel(_("Reboot Netplay"));
+			net->SetHelp(_(""));
+		}
+		else
+		{
+			net->SetItemLabel(_("Boot Netplay"));
+			net->SetHelp(_(""));
+		}
+	}
+	if( replay )
+	{
+		replay->SetItemLabel(_("Open Replay"));
+		replay->SetHelp(_(""));
 	}
 
 	if (wxMenuItem *cdvd_full = menubar.FindItem(fullboot_id))

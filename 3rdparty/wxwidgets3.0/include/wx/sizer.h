@@ -42,7 +42,7 @@ class WXDLLIMPEXP_CORE wxSizerFlags
 public:
     // construct the flags object initialized with the given proportion (0 by
     // default)
-    wxSizerFlags(int proportion = 0) : m_proportion(proportion)
+    explicit wxSizerFlags(int proportion = 0) : m_proportion(proportion)
     {
         m_flags = 0;
         m_borderInPixels = 0;

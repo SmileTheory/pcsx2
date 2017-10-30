@@ -177,6 +177,8 @@ protected:
 
 	void Menu_BootCdvd_Click(wxCommandEvent &event);
 	void Menu_BootCdvd2_Click(wxCommandEvent &event);
+	void Menu_BootNet_Click(wxCommandEvent &event);
+	void Menu_BootReplay_Click(wxCommandEvent &event);
 	void Menu_OpenELF_Click(wxCommandEvent &event);
 	void Menu_CdvdSource_Click(wxCommandEvent &event);
 	void Menu_LoadStates_Click(wxCommandEvent &event);
@@ -205,7 +207,11 @@ protected:
 
 	void _DoBootCdvd();
 	bool _DoSelectIsoBrowser( wxString& dest );
+	bool _DoSelectReplayBrowser( wxString& dest );
 	bool _DoSelectELFBrowser();
+
+	void _DoBootCdvdWithNetplay();
+	void _DoBootCdvdWithReplay();
 
 // ------------------------------------------------------------------------
 //     MainEmuFram Internal API for Populating Main Menu Contents

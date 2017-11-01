@@ -33,6 +33,18 @@ namespace
 	}
 	u8 CALLBACK NETPADstartPoll(int pad)
 	{
+		g_pollSide = pad - 1;
+		g_pollIndex = 0;
+
+		if(g_pollSide == 0)
+		{
+			if(g_IOPHook && g_cmd42Counter > 2)
+				g_IOPHook->NextFrame();
+		}
+#ifdef LOG_IOP
+		using namespace std;
+		g_log << endl << setw(2) << (int)pad << '-' << setw(2) << "!" << ": ";
+#endif
 		return PADstartPollBackup(pad);
 	}
 	u32 CALLBACK NETPADquery(int pad)
@@ -70,9 +82,9 @@ namespace
 #endif
 		value = PADpollBackup(value);
 #ifdef LOG_IOP
-		g_log << hex << setw(2) << (int)value << ' ';
+		//g_log << hex << setw(2) << (int)value << ' ';
 #endif
-		
+
 		if(g_cmd42Counter > 2 && g_pollIndex > 1)
 		{
 			if(g_pollIndex <= 3)
@@ -86,6 +98,9 @@ namespace
 			else
 				value = g_pollIndex <= 7 ? 0x7f : 0xff;
 		}
+#ifdef LOG_IOP
+		g_log << hex << setw(2) << (int)value << ' ';
+#endif
 		g_pollIndex++;
 		return value;
 	}

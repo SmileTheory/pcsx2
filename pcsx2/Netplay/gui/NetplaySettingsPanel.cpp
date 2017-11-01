@@ -59,6 +59,7 @@ void NetplaySettingsPanel::UpdateUI(wxCommandEvent& event)
 	this->m_hostPortSpinCtrl->Show(!host);
 	this->m_readOnlyMCDCheckBox->Show(host);
 
+	this->Layout();
 	this->GetParent()->Fit();
 }
 

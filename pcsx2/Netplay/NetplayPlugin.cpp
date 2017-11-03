@@ -234,6 +234,7 @@ public:
 			if(delay <= 0)
 				return false;
 
+#if 0
 			_dialog->SetStatus(wxT("Memory card synchronization..."));
 
 			_mcd_backup = Utilities::ReadMCD(0,0);
@@ -290,6 +291,7 @@ public:
 					}
 				}
 			}
+#endif
 			return true;
 		}
 		return false;
@@ -342,6 +344,7 @@ public:
 				}
 			}
 
+#if 0
 			_dialog->SetStatus(wxT("Memory card synchronization..."));
 
 			auto uncompressed_mcd = Utilities::ReadMCD(0,0);
@@ -379,7 +382,7 @@ public:
 				std::copy(blockEndMsg, blockEndMsg + data.data_length, data.p.get());
 				_session->queue_data(data);
 			}
-
+#endif
 			shoryu::msec timeout_timestamp = shoryu::time_ms() + 30000;
 			while(true)
 			{

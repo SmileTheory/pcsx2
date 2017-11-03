@@ -8,6 +8,12 @@
 IOPHook* g_IOPHook = 0;
 //#define LOG_IOP
 
+#ifdef NETPLAY_ANALOG_STICKS
+#define NETPLAY_SYNC_NUM_INPUTS 6
+#else
+#define NETPLAY_SYNC_NUM_INPUTS 2
+#endif
+
 namespace
 {
 	_PADupdate		   PADupdateBackup;
@@ -19,7 +25,7 @@ namespace
 	_PADsetSlot        PADsetSlotBackup;
 	_PADqueryMtap      PADqueryMtapBackup;
 	
-	int g_cmd42Counter = -1;
+	int g_currentCommand = -1;
 	int g_pollSide = -1;
 	int g_pollIndex = -1;
 	bool g_active = false;
@@ -38,7 +44,7 @@ namespace
 
 		if(g_pollSide == 0)
 		{
-			if(g_IOPHook && g_cmd42Counter > 2)
+			if(g_IOPHook && g_currentCommand == 0x42)
 				g_IOPHook->NextFrame();
 		}
 #ifdef LOG_IOP
@@ -66,37 +72,39 @@ namespace
 
 	u8 CALLBACK NETPADpoll(u8 value)
 	{
-		if(g_pollIndex == 0 && g_pollSide == 0)
-		{
-			if( value == 0x42 )
-			{
-				if(g_cmd42Counter < 10) g_cmd42Counter++;
-			}
-			else
-				g_cmd42Counter = 0;
-		}
+		if (g_pollIndex == 0)
+			g_currentCommand = value;
 
 #ifdef LOG_IOP
 		using namespace std;
 		g_log << hex << setw(2) << (int)value << '=';
 #endif
 		value = PADpollBackup(value);
-#ifdef LOG_IOP
-		//g_log << hex << setw(2) << (int)value << ' ';
-#endif
 
-		if(g_cmd42Counter > 2 && g_pollIndex > 1)
+		if (g_currentCommand == 0x42)
 		{
-			if(g_pollIndex <= 3)
+			if (g_pollIndex < 2)
 			{
-				if(g_IOPHook)
-					value = g_IOPHook->HandleIO(g_pollSide, g_pollIndex-2,value);
+				// nothing
+			}
+			else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+			{
+				if (g_IOPHook)
+				{
+					value = g_IOPHook->HandleIO(g_pollSide, g_pollIndex - 2, value);
 
-				if(g_IOPHook && g_pollIndex == 3)
-					g_IOPHook->AcceptInput(g_pollSide);
+					if (g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
+						g_IOPHook->AcceptInput(g_pollSide);
+				}
+			}
+			else if (g_pollIndex < 8)
+			{
+				value = 0x7f;
 			}
 			else
-				value = g_pollIndex <= 7 ? 0x7f : 0xff;
+			{
+				value = 0xff;
+			}
 		}
 #ifdef LOG_IOP
 		g_log << hex << setw(2) << (int)value << ' ';
@@ -111,7 +119,7 @@ namespace
 
 		if(g_pollSide == 0)
 		{
-			if(g_IOPHook && g_cmd42Counter > 2)
+			if(g_IOPHook && g_currentCommand == 0x42)
 				g_IOPHook->NextFrame();
 		}
 #ifdef LOG_IOP
@@ -126,7 +134,7 @@ namespace
 void HookIOP(IOPHook* hook)
 {
 	g_IOPHook = hook;
-	g_cmd42Counter = 0;
+	g_currentCommand = 0;
 	g_pollSide = 0;
 	g_pollIndex = 0;
 

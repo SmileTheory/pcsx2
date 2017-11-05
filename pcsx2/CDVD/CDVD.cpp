@@ -606,6 +606,7 @@ void cdvdReset()
 
 	// CDVD internally uses GMT+9.  If you think the time's wrong, you're wrong.
 	// Set up your time zone and winter/summer in the BIOS.  No PS2 BIOS I know of features automatic DST.
+#if 0
 	wxDateTime curtime( wxDateTime::GetTimeNow() );
 	cdvd.RTC.second = (u8)curtime.GetSecond();
 	cdvd.RTC.minute = (u8)curtime.GetMinute();
@@ -613,6 +614,16 @@ void cdvdReset()
 	cdvd.RTC.day = (u8)curtime.GetDay(wxDateTime::GMT9);
  	cdvd.RTC.month = (u8)curtime.GetMonth(wxDateTime::GMT9) + 1; // WX returns Jan as "0"
  	cdvd.RTC.year = (u8)(curtime.GetYear(wxDateTime::GMT9) - 2000);
+#else
+	// Every netplay session begins at Nov 5, 2017, 11:35:32 AM.
+	cdvd.RTC.second = (u8)(32);
+	cdvd.RTC.minute = (u8)(35);
+	cdvd.RTC.hour = (u8)(11);
+	cdvd.RTC.day = (u8)(5);
+	cdvd.RTC.month = (u8)(11);
+	cdvd.RTC.year = (u8)(17);
+#endif
+
 }
 
 struct Freeze_v10Compat

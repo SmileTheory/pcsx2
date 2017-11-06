@@ -14,8 +14,8 @@ void Utilities::ResetSettingsToSafeDefaults()
 {
 	g_Conf->EmuOptions.HostFs = false;
 	g_Conf->EmuOptions.McdEnableEjection = false;
-	g_Conf->EmuOptions.MultitapPort0_Enabled = false;
-	g_Conf->EmuOptions.MultitapPort1_Enabled = false;
+	//g_Conf->EmuOptions.MultitapPort0_Enabled = false;
+	//g_Conf->EmuOptions.MultitapPort1_Enabled = false;
 	g_Conf->EmuOptions.UseBOOT2Injection = true;
 	g_Conf->EmuOptions.EnablePatches = false;
 	g_Conf->EmuOptions.Speedhacks.bitset = 0;

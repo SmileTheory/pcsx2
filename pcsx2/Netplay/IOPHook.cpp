@@ -26,32 +26,53 @@ namespace
 	_PADqueryMtap      PADqueryMtapBackup;
 	
 	int g_currentCommand = -1;
-	int g_pollSide = -1;
+	int g_pollPort = -1;
+	int g_pollSlot[2] = {0, 0};
 	int g_pollIndex = -1;
+	int g_hookFrameNum = -1;
 	bool g_active = false;
 #ifdef LOG_IOP
 	std::fstream g_log;
 #endif
 
+	// port 0 slot 0   -> pad 0
+	// port 1 slot 0-3 -> pad 1-4
+	// port 0 slot 1-3 -> pad 5-7
+
+	int NET_CurrentPad()
+	{
+		int slot = g_pollSlot[g_pollPort];
+
+		if (slot)
+			return slot + ((g_pollPort == 0) ? 4 : 1);
+
+		return g_pollPort;
+	}
+
 	s32 CALLBACK NETPADopen(void *pDsp)
 	{
 		return PADopenBackup(pDsp);
 	}
-	u8 CALLBACK NETPADstartPoll(int pad)
+	u8 CALLBACK NETPADstartPoll(int port)
 	{
-		g_pollSide = pad - 1;
+		g_pollPort = port - 1;
 		g_pollIndex = 0;
 
-		if(g_pollSide == 0)
+		if(g_pollPort == 0)
 		{
 			if(g_IOPHook && g_currentCommand == 0x42)
+			{
 				g_IOPHook->NextFrame();
+				g_hookFrameNum++;
+			}
 		}
 #ifdef LOG_IOP
 		using namespace std;
-		g_log << endl << setw(2) << (int)pad << '-' << setw(2) << "!" << ": ";
+		g_log << endl << setw(8) << (int)g_hookFrameNum << ": ";
+		g_log << setw(2) << (int)port << '-' << setw(2) << (int)g_pollSlot[g_pollPort];
+		g_log << " (" << setw(2) << NET_CurrentPad() << ") : ";
 #endif
-		return PADstartPollBackup(pad);
+		return PADstartPollBackup(port);
 	}
 	u32 CALLBACK NETPADquery(int pad)
 	{
@@ -83,18 +104,21 @@ namespace
 
 		if (g_currentCommand == 0x42)
 		{
+			int pad = NET_CurrentPad();
+
 			if (g_pollIndex < 2)
 			{
 				// nothing
 			}
-			else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+			// for now, ignore pads above 1
+			else if (pad < 2 && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
 			{
 				if (g_IOPHook)
 				{
-					value = g_IOPHook->HandleIO(g_pollSide, g_pollIndex - 2, value);
+					value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
 
 					if (g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
-						g_IOPHook->AcceptInput(g_pollSide);
+						g_IOPHook->AcceptInput(pad);
 				}
 			}
 			else if (g_pollIndex < 8)
@@ -114,18 +138,8 @@ namespace
 	}
 	s32 CALLBACK NETPADsetSlot(u8 port, u8 slot)
 	{
-		g_pollSide = port - 1;
-		g_pollIndex = 0;
-
-		if(g_pollSide == 0)
-		{
-			if(g_IOPHook && g_currentCommand == 0x42)
-				g_IOPHook->NextFrame();
-		}
-#ifdef LOG_IOP
-		using namespace std;
-		g_log << endl << setw(2) << (int)port << '-' << setw(2) << (int)slot << ": ";
-#endif
+		g_pollPort = port - 1;
+		g_pollSlot[g_pollPort] = slot - 1;
 
 		return PADsetSlotBackup(port, slot);
 	}
@@ -135,8 +149,9 @@ void HookIOP(IOPHook* hook)
 {
 	g_IOPHook = hook;
 	g_currentCommand = 0;
-	g_pollSide = 0;
+	g_pollPort = 0;
 	g_pollIndex = 0;
+	g_hookFrameNum = 0;
 
 	if(g_active)
 		return;

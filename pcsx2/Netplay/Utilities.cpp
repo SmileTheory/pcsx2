@@ -134,9 +134,9 @@ bool Utilities::IsSyncStateReady()
 	return !DiscSerial.IsEmpty();
 }
 
-boost::shared_ptr<EmulatorSyncState> Utilities::GetSyncState()
+std::shared_ptr<EmulatorSyncState> Utilities::GetSyncState()
 {
-	boost::shared_ptr<EmulatorSyncState> syncState(new EmulatorSyncState());
+	std::shared_ptr<EmulatorSyncState> syncState(new EmulatorSyncState());
 
 	auto diskId = GetCurrentDiscId();
 	if(diskId.Len() == 0)

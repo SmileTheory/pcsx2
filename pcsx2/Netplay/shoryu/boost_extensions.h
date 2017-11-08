@@ -1,43 +1,35 @@
 #pragma once
-#include <boost/array.hpp>
+#include <unordered_map>
+
 #include <boost/asio/ip/udp.hpp>
-#include <boost/unordered_map.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>    
 #include <boost/thread/locks.hpp>
 
+namespace std
+{
+	template <>
+	struct hash<boost::asio::ip::udp::endpoint>
+	{
+		std::size_t operator()(const boost::asio::ip::udp::endpoint &ep) const
+		{
+			std::string s;
+			s = (int)ep.port();
+			s += ":";
+			if(ep.address().is_v4()) {
+				s += ep.address().to_v4().to_string();
+			}
+			else if(ep.address().is_v6()) {
+				s += ep.address().to_v6().to_string();
+			}
+			return std::hash<std::string>{}(s);
+		}
+	};
+}
+
+
 namespace boost
 {
-#if 0
-	template <typename T, std::size_t N>
-	inline std::size_t hash_value(const boost::array<T,N>& arr) 
-	{ 
-		return boost::hash_range(arr.begin(), arr.end()); 
-	}
-#endif
-
-#if 0
-	// Couldn't compile on boost 1.47 without this
-	template <typename T, std::size_t N>
-	inline std::size_t hash_value(const boost::asio::detail::array<T,N>& arr) 
-	{ 
-		return boost::hash_range(arr.begin(), arr.end()); 
-	}
-#endif
-
-	inline std::size_t hash_value(const boost::asio::ip::udp::endpoint & ep)
-	{
-		std::size_t seed = 0;
-		boost::hash_combine(seed, ep.port());
-		if(ep.address().is_v4()) {
-			boost::hash_combine(seed, ep.address().to_v4().to_bytes());
-		}
-		else if(ep.address().is_v6()) {
-			boost::hash_combine(seed, ep.address().to_v6().to_bytes());
-		}
-		return seed;
-	}
-
 	class semaphore : boost::noncopyable
 	{
 	public:

@@ -2,7 +2,7 @@
 
 #include <list>
 #include <boost/circular_buffer.hpp>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <boost/thread/recursive_mutex.hpp>
 #include <algorithm>
 

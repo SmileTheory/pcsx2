@@ -21,7 +21,7 @@ namespace shoryu
 
 	struct message_data
 	{
-		boost::shared_array<char> p;
+		boost::shared_ptr<char[]> p;
 		uint32_t data_length;
 	};
 
@@ -161,11 +161,11 @@ namespace shoryu
 	{
 		typedef message<FrameType, StateType> message_type;
 		typedef std::vector<endpoint> endpoint_container;
-		typedef boost::unordered_map<int64_t, FrameType> frame_map;
-		typedef boost::unordered_map<endpoint, int> side_map;
+		typedef std::unordered_map<int64_t, FrameType> frame_map;
+		typedef std::unordered_map<endpoint, int> side_map;
 		typedef std::vector<frame_map> frame_table;
 		typedef std::function<bool(const StateType&, const StateType&)> state_check_handler_type;
-		typedef std::vector<boost::unordered_map<int64_t, message_data>> data_table;
+		typedef std::vector<std::unordered_map<int64_t, message_data>> data_table;
 	public:
 #ifdef SHORYU_ENABLE_LOG
 		std::stringstream log;

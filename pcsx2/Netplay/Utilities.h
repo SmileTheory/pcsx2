@@ -2,8 +2,8 @@
 #include "App.h"
 #include "EmulatorState.h"
 #include <vector>
-#include <boost/shared_ptr.hpp>
-#include <boost/unordered_map.hpp>
+#include <memory>
+#include <unordered_map>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include <boost/thread/lock_guard.hpp>
@@ -22,7 +22,7 @@ public:
 		Utilities::block_type& uncompressed);
 	static size_t GetMCDSize(uint port, uint slot);
 	static bool IsSyncStateReady();
-	static boost::shared_ptr<EmulatorSyncState> GetSyncState();
+	static std::shared_ptr<EmulatorSyncState> GetSyncState();
 	static wxString GetDiscNameById(const wxString& id);
 	static wxString GetCurrentDiscId();
 	static wxString GetCurrentDiscName();

@@ -1,9 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <algorithm>
+#include <array>
+#include <unordered_map>
 
-#include <boost/unordered_map.hpp>
-#include <boost/shared_array.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/thread/thread.hpp>
@@ -44,7 +44,7 @@ namespace shoryu
 		{
 		public:
 			endpoint ep;
-			boost::array<char, BufferSize> buffer;
+			std::array<char, BufferSize> buffer;
 			size_t buffer_length;
 		};
 		template<OperationType Operation, int BufferSize, int BufferQueueSize>
@@ -52,7 +52,7 @@ namespace shoryu
 		{
 		public:
 			transaction_buffer() : _next_buffer(0) {}
-			boost::array<transaction_data<Operation,BufferSize>, BufferQueueSize> buffer;
+			std::array<transaction_data<Operation,BufferSize>, BufferQueueSize> buffer;
 			transaction_data<Operation,BufferSize>& next()
 			{
 				boost::unique_lock<boost::mutex> lock(_mutex);
@@ -71,7 +71,7 @@ namespace shoryu
 	public:
 		typedef typename peer<DataType> peer_type;
 		typedef typename peer_data<DataType> peer_data_type;
-		typedef boost::unordered_map<endpoint, boost::shared_ptr<peer_type>> peer_map_type;
+		typedef std::unordered_map<endpoint, std::shared_ptr<peer_type>> peer_map_type;
 		typedef std::list<const peer_data_type > peer_list_type;
 		typedef std::function<void(const error_code&)> error_handler_type;
 		typedef std::function<void(const endpoint&, DataType&)> receive_handler_type;
@@ -170,7 +170,7 @@ namespace shoryu
 		{
 			transaction_data<Send,BufferSize>& t = _send_buffer.next();
 			t.ep = ep;
-			oarchive oa(t.buffer.begin(), t.buffer.end());
+			oarchive oa(t.buffer.data(), t.buffer.data() + t.buffer.size());
 			int send_n = find_peer(ep).serialize_datagram(oa);
 
 			t.buffer_length = oa.pos();
@@ -199,12 +199,12 @@ namespace shoryu
 
 		inline int send_impl(const boost::asio::ip::udp::endpoint& ep, int delay_ms, int loss_percentage)
 		{
-			boost::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(_io_service));
+			std::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(_io_service));
 			timer->expires_from_now(boost::posix_time::milliseconds(delay_ms));
 
-			boost::shared_ptr<transaction_data<Send,BufferSize>> t(new transaction_data<Send,BufferSize>());
+			std::shared_ptr<transaction_data<Send,BufferSize>> t(new transaction_data<Send,BufferSize>());
 			t->ep = ep;
-			oarchive oa(t->buffer.begin(), t->buffer.end());
+			oarchive oa(t->buffer.data(), t->buffer.data() + t->buffer.size());
 			int send_n = find_peer(ep).serialize_datagram(oa);
 
 			if((rand() % 100)+1 <= loss_percentage)
@@ -245,8 +245,7 @@ namespace shoryu
 		inline peer_type& find_peer(const endpoint& ep)
 		{
 			lock_type lock(_mutex);
-			peer_map_type::iterator end;
-			if(_peers.find(ep) == end)
+			if(_peers.find(ep) == _peers.end())
 			{
 				_peers[ep].reset(new peer_type());
 				_peers[ep]->data.ep = ep;
@@ -296,7 +295,7 @@ namespace shoryu
 		}
 		void finalize(const transaction_data<Recv,BufferSize>& transaction)
 		{
-			iarchive ia(transaction.buffer.begin(), transaction.buffer.begin()+transaction.buffer_length);
+			iarchive ia(transaction.buffer.data(), transaction.buffer.data() + transaction.buffer_length);
 			peer_type& peer = find_peer(transaction.ep);
 			try
 			{

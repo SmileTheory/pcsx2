@@ -19,8 +19,8 @@
 class NetplayPlugin : public INetplayPlugin
 {
 	typedef shoryu::session<Message, EmulatorSyncState> session_type;
-	boost::shared_ptr<session_type> _session;
-	boost::shared_ptr<boost::thread> _thread;
+	std::shared_ptr<session_type> _session;
+	std::shared_ptr<boost::thread> _thread;
 public:
 	NetplayPlugin()
 		: _is_initialized(false), _is_stopped(false), _dialog(0)
@@ -626,7 +626,7 @@ protected:
 	wxString _game_name;
 	Message _my_frame;
 	Utilities::block_type _mcd_backup;
-	boost::shared_ptr<Replay> _replay;
+	std::shared_ptr<Replay> _replay;
 	INetplayDialog* _dialog;
 	boost::recursive_mutex _mutex;
 	IConsoleWriter _console;

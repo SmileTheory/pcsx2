@@ -3,7 +3,6 @@
 #include <fstream>
 #include <sstream>
 #include <streambuf>
-#include <boost/shared_array.hpp>
 
 Replay::Replay() : _playback_frame(0), _mode(None), _length(0) {}
 

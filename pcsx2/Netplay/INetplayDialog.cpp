@@ -1,6 +1,9 @@
 #include "PrecompiledHeader.h"
+
+#include <memory>
+
 #include <boost/thread/condition_variable.hpp>
-#include <boost/shared_ptr.hpp>
+
 #include "INetplayDialog.h"
 #include "gui/NetplayDialog.h"
 #include "App.h"
@@ -159,8 +162,8 @@ public:
 	}
 protected:
 	bool _is_closed;
-	boost::shared_ptr<NetplayDialog> m_dialog;
-	boost::shared_ptr<boost::condition_variable> _cond;
+	std::shared_ptr<NetplayDialog> m_dialog;
+	std::shared_ptr<boost::condition_variable> _cond;
 	boost::mutex _cond_mutex;
 	boost::mutex _close_mutex;;
 	bool _operation_success;

@@ -305,7 +305,7 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
-			if(!_session || !_session->create(2, *state, boost::bind(&NetplayPlugin::CheckSyncStates, this, _1, _2), timeout))
+			if(!_session || !_session->create(g_Conf->Net.NumPlayers, *state, boost::bind(&NetplayPlugin::CheckSyncStates, this, _1, _2), timeout))
 				return false;
 			
 			{

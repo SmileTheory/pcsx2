@@ -110,8 +110,17 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	m_hostPortLabel->Wrap( -1 );
 	fgSizer3->Add( m_hostPortLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_hostPortSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 1065535, 7500 );
+	m_hostPortSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 7500 );
 	fgSizer3->Add( m_hostPortSpinCtrl, 0, wxALL|wxEXPAND, 5 );
+	
+	m_hostNumPlayersLabel = new wxStaticText( this, wxID_ANY, _("# of players:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_hostNumPlayersLabel->Wrap( -1 );
+	fgSizer3->Add( m_hostNumPlayersLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	
+	m_hostNumPlayersSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxT("2"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 2, 2, 2 );
+	m_hostNumPlayersSpinCtrl->Enable( false );
+	
+	fgSizer3->Add( m_hostNumPlayersSpinCtrl, 0, wxALL|wxEXPAND, 5 );
 	
 	
 	bSizer2->Add( fgSizer3, 0, wxEXPAND, 5 );

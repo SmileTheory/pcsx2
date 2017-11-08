@@ -19,6 +19,7 @@ struct NetplaySettings
 	wxString HostAddress;
 	bool SaveReplay;
 	bool ReadonlyMemcard;
+	uint NumPlayers;
 	
 	NetplaySettings();
 	void LoadSave( IniInterface& conf );

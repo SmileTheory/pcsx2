@@ -74,6 +74,8 @@ class NetplaySettingsPanelBase : public wxPanel
 		wxTextCtrl* m_hostAddressTextCtrl;
 		wxStaticText* m_hostPortLabel;
 		wxSpinCtrl* m_hostPortSpinCtrl;
+		wxStaticText* m_hostNumPlayersLabel;
+		wxSpinCtrl* m_hostNumPlayersSpinCtrl;
 		wxCheckBox* m_saveReplayCheckBox;
 		wxCheckBox* m_readOnlyMCDCheckBox;
 		

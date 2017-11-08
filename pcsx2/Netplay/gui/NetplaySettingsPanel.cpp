@@ -13,6 +13,7 @@ void NetplaySettingsPanel::FromSettings()
 	this->m_localPortSpinCtrl->SetValue(m_settings.LocalPort);
 	this->m_hostPortSpinCtrl->SetValue(m_settings.HostPort);
 	this->m_hostAddressTextCtrl->SetValue(m_settings.HostAddress);
+	this->m_hostNumPlayersSpinCtrl->SetValue(m_settings.NumPlayers);
 
 	switch(m_settings.Mode)
 	{
@@ -46,6 +47,8 @@ void NetplaySettingsPanel::ToSettings()
 
 	m_settings.ReadonlyMemcard = this->m_readOnlyMCDCheckBox->GetValue();
 
+	m_settings.NumPlayers = this->m_hostNumPlayersSpinCtrl->GetValue();
+
 	m_settings.SanityCheck();
 	FromSettings();
 }
@@ -57,6 +60,8 @@ void NetplaySettingsPanel::UpdateUI(wxCommandEvent& event)
 	this->m_hostAddressTextCtrl->Show(!host);
 	this->m_hostPortLabel->Show(!host);
 	this->m_hostPortSpinCtrl->Show(!host);
+	this->m_hostNumPlayersLabel->Show(host);
+	this->m_hostNumPlayersSpinCtrl->Show(host);
 	this->m_readOnlyMCDCheckBox->Show(host);
 
 	this->Layout();

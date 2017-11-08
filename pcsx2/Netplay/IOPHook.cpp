@@ -110,8 +110,8 @@ namespace
 			{
 				// nothing
 			}
-			// for now, ignore pads above 1
-			else if (pad < 2 && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+			// ignore pads > number of players
+			else if (pad < g_Conf->Net.NumPlayers && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
 			{
 				if (g_IOPHook)
 				{

@@ -8,6 +8,7 @@ NetplaySettings::NetplaySettings()
 	Mode = ConnectMode;
 	ReadonlyMemcard = false;
 	SaveReplay = false;
+	NumPlayers = 2;
 }
 
 void NetplaySettings::LoadSave( IniInterface& ini )
@@ -21,6 +22,7 @@ void NetplaySettings::LoadSave( IniInterface& ini )
 	IniEntry( HostAddress );
 	IniEntry( ReadonlyMemcard );
 	IniEntry( SaveReplay );
+	IniEntry( NumPlayers );
 
 	int mode = Mode;
 	ini.Entry(wxT("Mode"), mode, mode);
@@ -34,4 +36,8 @@ void NetplaySettings::SanityCheck()
 		LocalPort = 7500;
 	if(HostPort > 65535 || HostPort < 1)
 		HostPort = 7500;
+	if(NumPlayers < 2)
+		NumPlayers = 2;
+	if(NumPlayers > 2)
+		NumPlayers = 2;
 }

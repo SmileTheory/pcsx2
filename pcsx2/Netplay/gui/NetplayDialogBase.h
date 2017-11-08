@@ -1,15 +1,14 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Sep  8 2010)
+// C++ code generated with wxFormBuilder (version Nov  6 2017)
 // http://www.wxformbuilder.org/
 //
-// PLEASE DO "NOT" EDIT THIS FILE!
+// PLEASE DO *NOT* EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef __NetplayDialogBase__
-#define __NetplayDialogBase__
+#ifndef __NETPLAYDIALOGBASE_H__
+#define __NETPLAYDIALOGBASE_H__
 
 #include <wx/intl.h>
-
 #include <wx/string.h>
 #include <wx/stattext.h>
 #include <wx/gdicmn.h>
@@ -52,7 +51,7 @@ class NetplayDialogBase : public wxDialog
 	
 	public:
 		
-		NetplayDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Netplay - PCSX2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 250,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU );
+		NetplayDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Netplay - PCSX2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 250,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
 		~NetplayDialogBase();
 	
 };
@@ -84,7 +83,7 @@ class NetplaySettingsPanelBase : public wxPanel
 	
 	public:
 		
-		NetplaySettingsPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 287,246 ), long style = wxTAB_TRAVERSAL );
+		NetplaySettingsPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 287,246 ), long style = wxTAB_TRAVERSAL ); 
 		~NetplaySettingsPanelBase();
 	
 };
@@ -99,13 +98,12 @@ class InputDelayPanelBase : public wxPanel
 	protected:
 		wxStaticText* m_inputDelayLabel;
 		wxSpinCtrl* m_inputDelaySpinner;
-		
 	
 	public:
 		
-		InputDelayPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL );
+		InputDelayPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL ); 
 		~InputDelayPanelBase();
 	
 };
 
-#endif //__NetplayDialogBase__
+#endif //__NETPLAYDIALOGBASE_H__

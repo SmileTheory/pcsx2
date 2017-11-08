@@ -1,8 +1,8 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Sep  8 2010)
+// C++ code generated with wxFormBuilder (version Nov  6 2017)
 // http://www.wxformbuilder.org/
 //
-// PLEASE DO "NOT" EDIT THIS FILE!
+// PLEASE DO *NOT* EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
 #include "PrecompiledHeader.h"
@@ -20,7 +20,7 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	
 	m_statusText = new wxStaticText( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	m_statusText->Wrap( -1 );
-	m_statusText->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), 70, 90, 90, false, wxEmptyString ) );
+	m_statusText->SetFont( wxFont( wxNORMAL_FONT->GetPointSize(), wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
 	
 	bSizer4->Add( m_statusText, 0, wxALL|wxEXPAND, 7 );
 	
@@ -28,6 +28,7 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	bSizer4->Add( m_staticline1, 0, wxEXPAND, 5 );
 	
 	m_contentSizer = new wxBoxSizer( wxVERTICAL );
+	
 	
 	bSizer4->Add( m_contentSizer, 1, wxEXPAND, 5 );
 	
@@ -37,7 +38,9 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	m_dialogButtonSizerCancel = new wxButton( this, wxID_CANCEL );
 	m_dialogButtonSizer->AddButton( m_dialogButtonSizerCancel );
 	m_dialogButtonSizer->Realize();
+	
 	bSizer4->Add( m_dialogButtonSizer, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	
 	
 	this->SetSizer( bSizer4 );
 	this->Layout();
@@ -73,10 +76,11 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	m_hostRadioButton = new wxRadioButton( this, wxID_ANY, _("Host a game"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer1->Add( m_hostRadioButton, 0, wxALL, 5 );
 	
+	
 	bSizer2->Add( bSizer1, 0, wxALIGN_CENTER, 5 );
 	
 	wxFlexGridSizer* fgSizer3;
-	fgSizer3 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer3 = new wxFlexGridSizer( 2, 2, 0, 0 );
 	fgSizer3->AddGrowableCol( 1 );
 	fgSizer3->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -109,6 +113,7 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	m_hostPortSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 1065535, 7500 );
 	fgSizer3->Add( m_hostPortSpinCtrl, 0, wxALL|wxEXPAND, 5 );
 	
+	
 	bSizer2->Add( fgSizer3, 0, wxEXPAND, 5 );
 	
 	m_saveReplayCheckBox = new wxCheckBox( this, wxID_ANY, _("Save Replay"), wxDefaultPosition, wxDefaultSize, 0 );
@@ -116,6 +121,7 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	
 	m_readOnlyMCDCheckBox = new wxCheckBox( this, wxID_ANY, _("Read-only Memory Card"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer2->Add( m_readOnlyMCDCheckBox, 0, wxALL, 5 );
+	
 	
 	this->SetSizer( bSizer2 );
 	this->Layout();
@@ -148,10 +154,12 @@ InputDelayPanelBase::InputDelayPanelBase( wxWindow* parent, wxWindowID id, const
 	m_inputDelaySpinner = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 15, 1 );
 	bSizer11->Add( m_inputDelaySpinner, 1, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
+	
 	bSizer10->Add( bSizer11, 0, wxEXPAND, 5 );
 	
 	
 	bSizer10->Add( 0, 0, 1, wxEXPAND, 5 );
+	
 	
 	this->SetSizer( bSizer10 );
 	this->Layout();

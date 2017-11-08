@@ -4,7 +4,7 @@
 NetplaySettings::NetplaySettings()
 {
 	IsEnabled = false;
-	LocalPort = HostPort = 7500;
+	HostPort = 7500;
 	Mode = ConnectMode;
 	ReadonlyMemcard = false;
 	SaveReplay = false;
@@ -17,7 +17,6 @@ void NetplaySettings::LoadSave( IniInterface& ini )
 	ScopedIniGroup path( ini, L"Net" );
 
 	IniEntry( Username );
-	IniEntry( LocalPort );
 	IniEntry( HostPort );
 	IniEntry( HostAddress );
 	IniEntry( ReadonlyMemcard );
@@ -32,8 +31,6 @@ void NetplaySettings::LoadSave( IniInterface& ini )
 }
 void NetplaySettings::SanityCheck()
 {
-	if(LocalPort > 65535 || LocalPort < 1)
-		LocalPort = 7500;
 	if(HostPort > 65535 || HostPort < 1)
 		HostPort = 7500;
 	if(NumPlayers < 2)

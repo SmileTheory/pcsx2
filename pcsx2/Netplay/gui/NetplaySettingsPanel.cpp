@@ -10,7 +10,6 @@ NetplaySettingsPanel::NetplaySettingsPanel(wxWindow* parent)
 }
 void NetplaySettingsPanel::FromSettings()
 {
-	this->m_localPortSpinCtrl->SetValue(m_settings.LocalPort);
 	this->m_hostPortSpinCtrl->SetValue(m_settings.HostPort);
 	this->m_hostAddressTextCtrl->SetValue(m_settings.HostAddress);
 	this->m_hostNumPlayersSpinCtrl->SetValue(m_settings.NumPlayers);
@@ -33,7 +32,6 @@ void NetplaySettingsPanel::FromSettings()
 }
 void NetplaySettingsPanel::ToSettings()
 {
-	m_settings.LocalPort = this->m_localPortSpinCtrl->GetValue();
 	m_settings.HostPort = this->m_hostPortSpinCtrl->GetValue();
 
 	m_settings.SaveReplay = this->m_saveReplayCheckBox->GetValue();
@@ -58,8 +56,6 @@ void NetplaySettingsPanel::UpdateUI(wxCommandEvent& event)
 
 	this->m_hostAddressLabel->Show(!host);
 	this->m_hostAddressTextCtrl->Show(!host);
-	this->m_hostPortLabel->Show(!host);
-	this->m_hostPortSpinCtrl->Show(!host);
 	this->m_hostNumPlayersLabel->Show(host);
 	this->m_hostNumPlayersSpinCtrl->Show(host);
 	this->m_readOnlyMCDCheckBox->Show(host);

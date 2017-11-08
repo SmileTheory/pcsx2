@@ -13,7 +13,6 @@ struct NetplaySettings
 	bool IsEnabled;
 
 	wxString Username;
-	uint LocalPort;
 	NetplayMode Mode;
 	uint HostPort;
 	wxString HostAddress;

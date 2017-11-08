@@ -34,13 +34,7 @@ public:
 		_is_stopped = false;
 		_ready_to_print_error_check = [&]() { return !_is_initialized; };
 		NetplaySettings& settings = g_Conf->Net;
-		if( settings.LocalPort <= 0 || settings.LocalPort > 65535 )
-		{
-			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid port: %u."), settings.LocalPort), _ready_to_print_error_check);
-			return;
-		}
-		if( settings.Mode == ConnectMode && (settings.HostPort <= 0 || settings.HostPort > 65535) )
+		if( settings.HostPort <= 0 || settings.HostPort > 65535 )
 		{
 			Stop();
 			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid port: %u."), settings.HostPort), _ready_to_print_error_check);
@@ -67,7 +61,11 @@ public:
 		_session->send_delay_max(80);
 		_session->packet_loss(25);
 #endif
-		if(_session->bind(settings.LocalPort))
+
+		// 0 picks a random port
+		int localPort = (settings.Mode == HostMode) ? settings.HostPort : 0;
+
+		if(_session->bind(localPort))
 		{
 			_state = SSNone;
 			_session->username(std::string((const char*)settings.Username.mb_str(wxConvUTF8)));
@@ -94,7 +92,7 @@ public:
 		{
 			lock.unlock();
 			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Unable to bind port %u."), settings.LocalPort), _ready_to_print_error_check);
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Unable to bind port %u."), localPort), _ready_to_print_error_check);
 		}
 	}
 	bool IsInit()

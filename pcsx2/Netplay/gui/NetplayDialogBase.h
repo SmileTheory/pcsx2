@@ -68,8 +68,6 @@ class NetplaySettingsPanelBase : public wxPanel
 		wxRadioButton* m_hostRadioButton;
 		wxStaticText* m_usernameLabel;
 		wxTextCtrl* m_usernameTextCtrl;
-		wxStaticText* m_localPortLabel;
-		wxSpinCtrl* m_localPortSpinCtrl;
 		wxStaticText* m_hostAddressLabel;
 		wxTextCtrl* m_hostAddressTextCtrl;
 		wxStaticText* m_hostPortLabel;

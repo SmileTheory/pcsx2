@@ -92,13 +92,6 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	m_usernameTextCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer3->Add( m_usernameTextCtrl, 0, wxALL|wxEXPAND, 5 );
 	
-	m_localPortLabel = new wxStaticText( this, wxID_ANY, _("Local Port:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_localPortLabel->Wrap( -1 );
-	fgSizer3->Add( m_localPortLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
-	
-	m_localPortSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 65535, 7500 );
-	fgSizer3->Add( m_localPortSpinCtrl, 0, wxALL|wxEXPAND, 5 );
-	
 	m_hostAddressLabel = new wxStaticText( this, wxID_ANY, _("Host Address:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_hostAddressLabel->Wrap( -1 );
 	fgSizer3->Add( m_hostAddressLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );

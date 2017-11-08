@@ -121,7 +121,7 @@ namespace
 						g_IOPHook->AcceptInput(pad);
 				}
 			}
-			else if (g_pollIndex < 8)
+			else if (g_pollIndex > 3 && g_pollIndex < 8)
 			{
 				value = 0x7f;
 			}

@@ -80,7 +80,7 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	bSizer2->Add( bSizer1, 0, wxALIGN_CENTER, 5 );
 	
 	wxFlexGridSizer* fgSizer3;
-	fgSizer3 = new wxFlexGridSizer( 2, 2, 0, 0 );
+	fgSizer3 = new wxFlexGridSizer( 0, 2, 0, 0 );
 	fgSizer3->AddGrowableCol( 1 );
 	fgSizer3->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );

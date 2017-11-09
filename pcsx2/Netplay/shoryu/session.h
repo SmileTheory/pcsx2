@@ -2,8 +2,6 @@
 #include <boost/thread/condition_variable.hpp>
 #include "async_transport.h"
 
-#define SHORYU_ENABLE_LOG
-
 namespace shoryu
 {
 	enum MessageType : uint8_t
@@ -188,11 +186,11 @@ namespace shoryu
 			clear();
 		}
 
-		bool bind(int port, int numThreads)
+		bool bind(int port)
 		{
 			try
 			{
-				_async.start(port, numThreads);
+				_async.start(port, 2);
 			}
 			catch(boost::system::system_error&)
 			{
@@ -650,16 +648,13 @@ namespace shoryu
 				ready_list.push_back(msg.host_ep);
 				foreach(auto kv, _states)
 				{
-					log << "client " << kv.first.address().to_string() << ":" << kv.first.port() << "\n";
-					log << "time_ms() - kv.second.time: " << (time_ms() - kv.second.time) << "kv.second.state == Join: " << (kv.second.state == Join) << "\n";
+					// FIXME: this fixes 3p, figure out how.
 					//if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
 					if (kv.second.state == Join)
 						ready_list.push_back(kv.first);
 					if(ready_list.size() >= _players_needed )
 						break;
 				}
-
-				log << "[" << time_ms() << "] ready_list.size(): " << ready_list.size() << "_players_needed: " << _players_needed << "\n";
 
 				if(ready_list.size() >= _players_needed)
 				{

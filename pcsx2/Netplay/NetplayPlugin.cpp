@@ -64,9 +64,8 @@ public:
 
 		// 0 picks a random port
 		int localPort = (settings.Mode == HostMode) ? settings.HostPort : 0;
-		int numThreads = (settings.Mode == HostMode) ? (settings.NumPlayers * 2 - 2) : 2;
 
-		if(_session->bind(localPort, numThreads))
+		if(_session->bind(localPort))
 		{
 			_state = SSNone;
 			_session->username(std::string((const char*)settings.Username.mb_str(wxConvUTF8)));

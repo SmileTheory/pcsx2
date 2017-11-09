@@ -110,16 +110,12 @@ namespace
 			{
 				// nothing
 			}
-			// ignore pads > number of players
-			else if (pad < g_Conf->Net.NumPlayers && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+			else if (g_IOPHook && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
 			{
-				if (g_IOPHook)
-				{
-					value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
+				value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
 
-					if (g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
-						g_IOPHook->AcceptInput(pad);
-				}
+				if (g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
+					g_IOPHook->AcceptInput(pad);
 			}
 			else if (g_pollIndex > 3 && g_pollIndex < 8)
 			{

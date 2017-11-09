@@ -474,6 +474,11 @@ public:
 	void AcceptInput(int side)
 	{
 		if(_is_stopped || !_session) return;
+
+		// ignore unassigned pads
+		if (side > _session->endpoints().size())
+			return;
+
 		try
 		{
 			_session->set(_my_frame);
@@ -493,6 +498,11 @@ public:
 	u8 HandleIO(int side, int index, u8 value)
 	{
 		if(_is_stopped || !_session) return value;
+
+		// ignore unassigned pads
+		if (side > _session->endpoints().size())
+			return (index < 2) ? 0xff : 0x7f;
+
 		{
 			int delay = _session->delay();
 			if(_state == SSNone)
@@ -530,7 +540,7 @@ public:
 		{
 			auto frame = _session->frame();
 			Stop();
-			ConsoleWarningMT(wxString::Format(wxT("NETPLAY: Session ended on frame %d."), frame), _ready_to_print_error_check);
+			ConsoleWarningMT(wxString::Format(wxT("NETPLAY: Session ended on frame %d."), (int)frame), _ready_to_print_error_check);
 		}
 		if(_is_stopped || !_session) return value;
 
@@ -549,7 +559,7 @@ public:
 				{
 					auto frame = _session->frame();
 					Stop();
-					ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Timeout on frame %d."), frame), _ready_to_print_error_check);
+					ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Timeout on frame %d."), (int)frame), _ready_to_print_error_check);
 					break;
 				}
 #ifdef CONNECTION_TEST

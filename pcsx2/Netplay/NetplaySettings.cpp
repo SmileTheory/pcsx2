@@ -35,6 +35,6 @@ void NetplaySettings::SanityCheck()
 		HostPort = 7500;
 	if(NumPlayers < 2)
 		NumPlayers = 2;
-	if(NumPlayers > 2)
-		NumPlayers = 2;
+	if(NumPlayers > 8)
+		NumPlayers = 8;
 }

@@ -2,6 +2,8 @@
 #include <boost/thread/condition_variable.hpp>
 #include "async_transport.h"
 
+#define SHORYU_ENABLE_LOG
+
 namespace shoryu
 {
 	enum MessageType : uint8_t
@@ -168,19 +170,29 @@ namespace shoryu
 		typedef std::vector<std::unordered_map<int64_t, message_data>> data_table;
 	public:
 #ifdef SHORYU_ENABLE_LOG
-		std::stringstream log;
+		//std::stringstream log;
+		std::fstream log;
 #endif
 		session() : 
+			_send_delay_max(0), _send_delay_min(0), _packet_loss(0)
+		{
 #ifdef SHORYU_ENABLE_LOG
-			log(std::ios_base::in + std::ios_base::out),
-#endif
-			_send_delay_max(0), _send_delay_min(0), _packet_loss(0) { clear(); }
+			std::string filename;
 
-		bool bind(int port)
+			filename = "shoryu.";
+			filename += std::to_string(time_ms());
+			filename += ".log";
+
+			log.open(filename, std::ios_base::trunc | std::ios_base::out);
+#endif
+			clear();
+		}
+
+		bool bind(int port, int numThreads)
 		{
 			try
 			{
-				_async.start(port, 2);
+				_async.start(port, numThreads);
 			}
 			catch(boost::system::system_error&)
 			{
@@ -530,7 +542,7 @@ namespace shoryu
 			_async.error_handler(std::function<void(const error_code&)>());
 			_async.receive_handler(std::function<void(const endpoint&, message_type&)>());
 #ifdef SHORYU_ENABLE_LOG
-			log.str("");
+			//log.str("");
 #endif
 		}
 		void connection_established()
@@ -606,7 +618,7 @@ namespace shoryu
 			if(msg.cmd == Join)
 			{
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Join ";
+				log << "[" << time_ms() << "] In.Join from " << ep.address().to_string() << ":" << ep.port() << "\n";
 #endif
 				_username_map[ep] = msg.username;
 				if(!_state_check_handler(_state, msg.state))
@@ -638,11 +650,17 @@ namespace shoryu
 				ready_list.push_back(msg.host_ep);
 				foreach(auto kv, _states)
 				{
-					if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
+					log << "client " << kv.first.address().to_string() << ":" << kv.first.port() << "\n";
+					log << "time_ms() - kv.second.time: " << (time_ms() - kv.second.time) << "kv.second.state == Join: " << (kv.second.state == Join) << "\n";
+					//if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
+					if (kv.second.state == Join)
 						ready_list.push_back(kv.first);
 					if(ready_list.size() >= _players_needed )
 						break;
 				}
+
+				log << "[" << time_ms() << "] ready_list.size(): " << ready_list.size() << "_players_needed: " << _players_needed << "\n";
+
 				if(ready_list.size() >= _players_needed)
 				{
 					if(_current_state == Wait)

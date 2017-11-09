@@ -110,9 +110,7 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	m_hostNumPlayersLabel->Wrap( -1 );
 	fgSizer3->Add( m_hostNumPlayersLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_hostNumPlayersSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxT("2"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 2, 2, 2 );
-	m_hostNumPlayersSpinCtrl->Enable( false );
-	
+	m_hostNumPlayersSpinCtrl = new wxSpinCtrl( this, wxID_ANY, wxT("2"), wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 2, 8, 2 );
 	fgSizer3->Add( m_hostNumPlayersSpinCtrl, 0, wxALL|wxEXPAND, 5 );
 	
 	

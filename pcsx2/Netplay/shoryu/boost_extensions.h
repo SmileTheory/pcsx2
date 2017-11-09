@@ -11,18 +11,11 @@ namespace std
 	template <>
 	struct hash<boost::asio::ip::udp::endpoint>
 	{
-		std::size_t operator()(const boost::asio::ip::udp::endpoint &ep) const
+		size_t operator()(const boost::asio::ip::udp::endpoint &ep) const
 		{
-			std::string s;
-			s = (int)ep.port();
-			s += ":";
-			if(ep.address().is_v4()) {
-				s += ep.address().to_v4().to_string();
-			}
-			else if(ep.address().is_v6()) {
-				s += ep.address().to_v6().to_string();
-			}
-			return std::hash<std::string>{}(s);
+			string s = ep.address().to_string();
+			s += ":" + to_string(ep.port());
+			return hash<string>{}(s);
 		}
 	};
 }

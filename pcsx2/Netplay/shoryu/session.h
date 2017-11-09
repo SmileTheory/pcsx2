@@ -648,9 +648,7 @@ namespace shoryu
 				ready_list.push_back(msg.host_ep);
 				foreach(auto kv, _states)
 				{
-					// FIXME: this fixes 3p, figure out how.
-					//if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
-					if (kv.second.state == Join)
+					if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
 						ready_list.push_back(kv.first);
 					if(ready_list.size() >= _players_needed )
 						break;
@@ -756,7 +754,8 @@ namespace shoryu
 				msg.username = _username;
 				msg.host_ep = host_ep;
 				msg.state = _state;
-				if(!send(host_ep))
+				// Commenting this line out causes multiple connect messages to send every 500ms, which is what we want
+				//if(!send(host_ep))
 				{
 					_async.queue(host_ep, msg);
 					send(host_ep);

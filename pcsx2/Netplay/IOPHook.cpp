@@ -102,7 +102,7 @@ namespace
 #endif
 		value = PADpollBackup(value);
 
-		if (g_currentCommand == 0x42)
+		if (g_IOPHook && g_currentCommand == 0x42)
 		{
 			int pad = NET_CurrentPad();
 
@@ -110,7 +110,7 @@ namespace
 			{
 				// nothing
 			}
-			else if (g_IOPHook && g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+			else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
 			{
 				value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
 

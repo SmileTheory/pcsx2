@@ -195,7 +195,7 @@ public:
 	}
 	bool Connect(const wxString& ip, unsigned short port, int timeout)
 	{
-		boost::mutex::scoped_lock connection_lock(_connection_mutex);
+		std::unique_lock<std::mutex> connection_lock(_connection_mutex);
 		_ready_to_connect_cond.wait(connection_lock);
 		shoryu::endpoint ep = shoryu::resolve_hostname(std::string(ip.ToAscii().data()));
 		ep.port(port);
@@ -296,7 +296,7 @@ public:
 	}
 	bool Host(int timeout)
 	{
-		boost::mutex::scoped_lock connection_lock(_connection_mutex);
+		std::unique_lock<std::mutex> connection_lock(_connection_mutex);
 		_ready_to_connect_cond.wait(connection_lock);
 		auto state = Utilities::GetSyncState();
 		if(state)
@@ -625,16 +625,16 @@ protected:
 	std::function<bool()> _ready_to_print_error_check;
 	bool _is_initialized;
 	bool _is_stopped;
-	boost::condition_variable _ready_to_connect_cond;
-	boost::mutex _connection_mutex;
+	std::condition_variable _ready_to_connect_cond;
+	std::mutex _connection_mutex;
 	wxString _game_name;
 	Message _my_frame;
 	Utilities::block_type _mcd_backup;
 	std::shared_ptr<Replay> _replay;
 	INetplayDialog* _dialog;
-	boost::recursive_mutex _mutex;
+	std::recursive_mutex _mutex;
 	IConsoleWriter _console;
-	typedef boost::unique_lock<boost::recursive_mutex> recursive_lock;
+	typedef std::unique_lock<std::recursive_mutex> recursive_lock;
 };
 
 INetplayPlugin* INetplayPlugin::instance = 0;

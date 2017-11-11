@@ -2,8 +2,6 @@
 
 #include <memory>
 
-#include <boost/thread/condition_variable.hpp>
-
 #include "INetplayDialog.h"
 #include "gui/NetplayDialog.h"
 #include "App.h"
@@ -82,7 +80,7 @@ public:
 	{
 		_is_closed = false;
 		Utilities::ExecuteOnMainThread([&]() {
-			_cond.reset(new boost::condition_variable());
+			_cond.reset(new std::condition_variable());
 			m_dialog->Show();
 		});
 	}
@@ -93,7 +91,7 @@ public:
 	void Close()
 	{
 		{
-			boost::mutex::scoped_lock lock(_close_mutex);
+			std::lock_guard<std::mutex> lock(_close_mutex);
 			if(!_is_closed)
 				_is_closed = true;
 			else
@@ -117,7 +115,7 @@ public:
 			return -1;
 		if(_phase != Confirmation)
 			throw std::exception("invalid state");
-		boost::mutex::scoped_lock lock(_cond_mutex);
+		std::unique_lock<std::mutex> lock(_cond_mutex);
 		_cond->wait(lock);
 		_phase = _operation_success ? Ready : None;
 		if(m_dialog && _operation_success)
@@ -163,9 +161,9 @@ public:
 protected:
 	bool _is_closed;
 	std::shared_ptr<NetplayDialog> m_dialog;
-	std::shared_ptr<boost::condition_variable> _cond;
-	boost::mutex _cond_mutex;
-	boost::mutex _close_mutex;;
+	std::shared_ptr<std::condition_variable> _cond;
+	std::mutex _cond_mutex;
+	std::mutex _close_mutex;
 	bool _operation_success;
 	NetplayConfigurationPhase _phase;
 	event_handler_type _close_handler;

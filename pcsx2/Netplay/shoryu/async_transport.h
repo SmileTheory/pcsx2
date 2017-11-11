@@ -55,14 +55,14 @@ namespace shoryu
 			std::array<transaction_data<Operation,BufferSize>, BufferQueueSize> buffer;
 			transaction_data<Operation,BufferSize>& next()
 			{
-				boost::unique_lock<boost::mutex> lock(_mutex);
+				std::unique_lock<std::mutex> lock(_mutex);
 				uint32_t i = _next_buffer;
 				_next_buffer = ++_next_buffer % BufferQueueSize;
 				return buffer[i];
 			}
 		private:
 			volatile uint32_t _next_buffer;
-			boost::mutex _mutex;
+			std::mutex _mutex;
 		};
 
 	template<class DataType, int BufferQueueSize = 256, int BufferSize = 1024>
@@ -75,8 +75,8 @@ namespace shoryu
 		typedef std::list<const peer_data_type > peer_list_type;
 		typedef std::function<void(const error_code&)> error_handler_type;
 		typedef std::function<void(const endpoint&, DataType&)> receive_handler_type;
-		typedef boost::mutex mutex_type;
-		typedef boost::unique_lock<mutex_type> lock_type;
+		typedef std::mutex mutex_type;
+		typedef std::unique_lock<mutex_type> lock_type;
 		
 		async_transport() : _socket(_io_service), _is_running(false)
 		{

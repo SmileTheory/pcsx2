@@ -3,7 +3,7 @@
 #include <list>
 #include <boost/circular_buffer.hpp>
 #include <memory>
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
 #include <algorithm>
 
 #include "datagram_header.h"
@@ -52,7 +52,7 @@ namespace shoryu
 
 		inline uint64_t queue_msg(const MsgType& msg)
 		{
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			msg_wrapper m;
 			m.id = next_id;
 			++next_id;
@@ -62,7 +62,7 @@ namespace shoryu
 		}
 		inline void clear_queue()
 		{
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			msg_queue.clear();
 		}
 
@@ -71,7 +71,7 @@ namespace shoryu
 		{
 			std::list<MsgType> data_list;
 			{
-				boost::unique_lock<boost::mutex> lock(_mutex);
+				std::unique_lock<std::mutex> lock(_mutex);
 				data.recv_time = time_ms();
 				datagram_header header;
 				header.deserialize(ia);
@@ -104,7 +104,7 @@ namespace shoryu
 
 		inline int serialize_datagram(oarchive& oa)
 		{
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			datagram_header header;
 			header.set_defaults();
 			if(received_msgs.begin() != received_msgs.end())
@@ -163,6 +163,6 @@ namespace shoryu
 			else
 				data.rtt_avg = (3*rtt + 7*data.rtt_avg)/10;
 		}
-		boost::mutex _mutex;
+		std::mutex _mutex;
 	};
 }

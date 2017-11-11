@@ -1,5 +1,4 @@
 #pragma once
-#include <boost/thread/condition_variable.hpp>
 #include "async_transport.h"
 
 namespace shoryu
@@ -259,7 +258,7 @@ namespace shoryu
 		{
 			if(_current_state == None)
 				throw std::exception("invalid state");
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			foreach(auto ep, _eps)
 				_async.clear_queue(ep);
 		}
@@ -267,7 +266,7 @@ namespace shoryu
 		inline void send_end_session_request()
 		{
 			_end_session_request = true;
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			message_type msg(EndSession);
 
 			foreach(auto ep, _eps)
@@ -288,7 +287,7 @@ namespace shoryu
 		{
 			if(_current_state == None)
 				throw std::exception("invalid state");
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			message_type msg(Delay);
 			msg.delay = delay();
 
@@ -306,7 +305,7 @@ namespace shoryu
 		{
 			if(_current_state == None)
 				throw std::exception("invalid state");
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			message_type msg(Data);
 			msg.data = data;
 			msg.frame_id = _data_index++;
@@ -325,7 +324,7 @@ namespace shoryu
 			if(_current_state == None)
 				throw std::exception("invalid state");
 
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			auto pred = [&]() -> bool {
 				if(_current_state != None)
 					return _data_table[side].find(_data_index) != _data_table[side].end();
@@ -352,7 +351,7 @@ namespace shoryu
 		{
 			if(_current_state == None)
 				throw std::exception("invalid state");
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			_frame_table[_side][_frame+_delay] = frame;
 			message_type msg(Frame);
 			msg.frame_id = _frame+_delay;
@@ -421,7 +420,7 @@ namespace shoryu
 				throw std::exception("invalid state");
 			if(frame < _delay)
 				return true;
-			boost::unique_lock<boost::mutex> lock(_mutex);
+			std::unique_lock<std::mutex> lock(_mutex);
 			auto pred = [&]() -> bool {
 				if(_current_state != None)
 					return _frame_table[side].find(frame) != _frame_table[side].end();
@@ -433,7 +432,7 @@ namespace shoryu
 #endif
 			if(timeout > 0)
 			{
-				if(!_frame_cond.timed_wait(lock, boost::posix_time::millisec(timeout), pred))
+				if(!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
 					return false;
 			}
 			else
@@ -534,12 +533,12 @@ namespace shoryu
 		}
 		const std::string& last_error()
 		{
-			boost::unique_lock<boost::mutex> lock(_error_mutex);
+			std::unique_lock<std::mutex> lock(_error_mutex);
 			return _last_error;
 		}
 		void last_error(const std::string& err)
 		{
-			boost::unique_lock<boost::mutex> lock(_error_mutex);
+			std::unique_lock<std::mutex> lock(_error_mutex);
 			_last_error = err;
 		}
 		const std::string& username(const endpoint& ep)
@@ -591,8 +590,8 @@ namespace shoryu
 				log << "\nep " << s << "\n";
 			}
 #endif
-			boost::unique_lock<boost::mutex> lock1(_connection_mutex);
-			boost::unique_lock<boost::mutex> lock2(_mutex);
+			std::unique_lock<std::mutex> lock1(_connection_mutex);
+			std::unique_lock<std::mutex> lock2(_mutex);
 			_frame_table.resize(_eps.size() + 1);
 			_data_table.resize(_eps.size() + 1);
 			_async.error_handler(boost::bind(&session<FrameType, StateType>::err_hdl, this, _1));
@@ -616,8 +615,8 @@ namespace shoryu
 		MessageType _current_state;	
 		unsigned int _players_needed;
 		endpoint _host_ep;
-		boost::semaphore _connection_sem;
-		boost::mutex _connection_mutex;
+		std::semaphore _connection_sem;
+		std::mutex _connection_mutex;
 		static const int connection_timeout = 1000;
 		StateType _state;
 		state_check_handler_type _state_check_handler;
@@ -657,7 +656,7 @@ namespace shoryu
 		}
 		void create_recv_handler(const endpoint& ep, message_type& msg)
 		{
-			boost::unique_lock<boost::mutex> lock(_connection_mutex);
+			std::unique_lock<std::mutex> lock(_connection_mutex);
 
 			if(msg.cmd == Join)
 			{
@@ -878,7 +877,7 @@ namespace shoryu
 		{
 			if(ep != _host_ep)
 				return;
-			boost::unique_lock<boost::mutex> lock(_connection_mutex);
+			std::unique_lock<std::mutex> lock(_connection_mutex);
 			if(msg.cmd == Info)
 			{
 #ifdef SHORYU_ENABLE_LOG
@@ -968,7 +967,7 @@ namespace shoryu
 
 				if(msg.cmd == Frame)
 				{
-					boost::unique_lock<boost::mutex> lock(_mutex);
+					std::unique_lock<std::mutex> lock(_mutex);
 					_frame_table[side][msg.frame_id] = msg.frame;
 					if(_first_received_frame < 0)
 						_first_received_frame = msg.frame_id;
@@ -983,7 +982,7 @@ namespace shoryu
 				}
 				if(msg.cmd == Data)
 				{
-					boost::unique_lock<boost::mutex> lock(_mutex);
+					std::unique_lock<std::mutex> lock(_mutex);
 					_data_table[side][msg.frame_id] = msg.data;
 					_data_cond.notify_all();
 					if (_side == 0 || side == 0)
@@ -991,14 +990,14 @@ namespace shoryu
 				}
 				if(msg.cmd == Delay)
 				{
-					boost::unique_lock<boost::mutex> lock(_mutex);
+					std::unique_lock<std::mutex> lock(_mutex);
 					delay(msg.delay);
 					if (_side == 0 || side == 0)
 						send(ep);
 				}
 				if(msg.cmd == EndSession)
 				{
-					boost::unique_lock<boost::mutex> lock(_mutex);
+					std::unique_lock<std::mutex> lock(_mutex);
 					_end_session_request = true;
 					if (_side == 0 || side == 0)
 						send(ep);
@@ -1007,7 +1006,7 @@ namespace shoryu
 		}
 		void err_hdl(const error_code& error)
 		{
-			boost::unique_lock<boost::mutex> lock(_error_mutex);
+			std::unique_lock<std::mutex> lock(_error_mutex);
 			_last_error = error.message();
 		}
 	private:
@@ -1029,10 +1028,10 @@ namespace shoryu
 		async_transport<message_type> _async;
 		endpoint_container _eps;
 		frame_table _frame_table;
-		boost::mutex _mutex;
-		boost::mutex _error_mutex;
-		boost::condition_variable _frame_cond;
-		boost::condition_variable _data_cond;
+		std::mutex _mutex;
+		std::mutex _error_mutex;
+		std::condition_variable _frame_cond;
+		std::condition_variable _data_cond;
 		data_table _data_table;
 	};
 }

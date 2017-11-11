@@ -435,19 +435,24 @@ namespace shoryu
 			if(frame < _delay)
 				return true;
 			std::unique_lock<std::mutex> lock(_mutex);
+
 			auto pred = [&]() -> bool {
 				if(_current_state != None)
 					return _frame_table[side].find(frame) != _frame_table[side].end();
 				else
 					return true;
 			};
-#ifdef SHORYU_ENABLE_LOG
-			log << "[" << time_ms() << "] Waiting for frame " << frame << " side " << side << "\n";
-#endif
+
 			if(timeout > 0)
 			{
-				if(!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
+				if (!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
+				{
+#ifdef SHORYU_ENABLE_LOG
+					log << "[" << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
+#endif
+
 					return false;
+				}
 			}
 			else
 				_frame_cond.wait(lock, pred);

@@ -550,7 +550,7 @@ public:
 		auto timeout = shoryu::time_ms() + 10000;
 		try
 		{
-			while(!_session->get(side, frame, _session->delay()*17))
+			while(!_session->get(side, frame, _session->delay() / 2))
 			{
 				_session->send();
 				if(_session->end_session_request())

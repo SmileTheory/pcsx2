@@ -102,7 +102,7 @@ namespace shoryu
 		}
 		inline void deserialize(shoryu::iarchive& a)
 		{
-			uint8_t cmdSide = (cmd & 0x1F) | ((side & 0x07) << 5);
+			uint8_t cmdSide;
 			a >> cmdSide;
 			cmd = cmdSide & 0x1F;
 			side = cmdSide >> 5;

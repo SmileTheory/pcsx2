@@ -904,9 +904,6 @@
     <ClCompile Include="..\..\Netplay\INetplayDialog.cpp">
       <Filter>AppHost\Netplay</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\Netplay\gui\InputDelayPanel.cpp">
-      <Filter>AppHost\Netplay\gui</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\Netplay\ReplayPlugin.cpp">
       <Filter>AppHost\Netplay</Filter>
     </ClCompile>
@@ -921,6 +918,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Netplay\Replay.cpp">
       <Filter>AppHost\Netplay</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Netplay\gui\NetplayLobbyPanel.cpp">
+      <Filter>AppHost\Netplay\gui</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1320,9 +1320,6 @@
     <ClInclude Include="..\..\Netplay\gui\NetplaySettingsPanel.h">
       <Filter>AppHost\Netplay\gui</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\Netplay\gui\InputDelayPanel.h">
-      <Filter>AppHost\Netplay\gui</Filter>
-    </ClInclude>
     <ClInclude Include="..\..\Netplay\IOPHook.h">
       <Filter>AppHost\Netplay</Filter>
     </ClInclude>
@@ -1424,6 +1421,9 @@
     </ClInclude>
     <ClInclude Include="..\..\Mdec.h">
       <Filter>System\Ps2\Iop</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\Netplay\gui\NetplayLobbyPanel.h">
+      <Filter>AppHost\Netplay\gui</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

@@ -5,9 +5,12 @@
 
 namespace shoryu
 {
+	// This will be combined with side, so ensure:
+	// 0 <= side        <=  7 (3 bits)
+	// 0 <= MessageType <= 31 (5 bits)
 	enum class MessageType : uint8_t
 	{
-		None,
+		None = 0,
 		Frame,
 		Data,
 		Ping, //for pinging
@@ -54,7 +57,8 @@ namespace shoryu
 		
 		inline void serialize(shoryu::oarchive& a) const
 		{
-			a << cmd << side;
+			uint8_t cmdSide = (cmd & 0x1F) | ((side & 0x07) << 5);
+			a << cmdSide;
 			size_t length;
 			switch(cmd)
 			{
@@ -98,7 +102,10 @@ namespace shoryu
 		}
 		inline void deserialize(shoryu::iarchive& a)
 		{
-			a >> cmd >> side;
+			uint8_t cmdSide = (cmd & 0x1F) | ((side & 0x07) << 5);
+			a >> cmdSide;
+			cmd = cmdSide & 0x1F;
+			side = cmdSide >> 5;
 			unsigned long addr;
 			unsigned short port;
 			switch(cmd)

@@ -1,6 +1,8 @@
 #pragma once
 #include "async_transport.h"
 
+#define SHORYU_ENABLE_LOG
+
 namespace shoryu
 {
 	enum MessageType : uint8_t
@@ -269,13 +271,17 @@ namespace shoryu
 			std::unique_lock<std::mutex> lock(_mutex);
 			message_type msg(EndSession);
 
-			foreach(auto ep, _eps)
+			for (int i = 0; i < _eps.size(); i++)
 			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] EndSn --> " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+				log << "[" << time_ms() << "] EndSn --> " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
 #endif
-				_async.queue(ep, msg);
-				_async.send(ep);
+				_async.queue(_eps[i], msg);
+				_async.send(_eps[i]);
 			}
 		}
 		inline bool end_session_request()
@@ -291,13 +297,17 @@ namespace shoryu
 			message_type msg(Delay);
 			msg.delay = delay();
 
-			foreach(auto ep, _eps)
+			for (int i = 0; i < _eps.size(); i++)
 			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Delay --> " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+				log << "[" << time_ms() << "] Delay --> " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
 #endif
-				_async.queue(ep, msg);
-				_async.send(ep);
+				_async.queue(_eps[i], msg);
+				_async.send(_eps[i]);
 			}
 		}
 
@@ -310,12 +320,16 @@ namespace shoryu
 			msg.data = data;
 			msg.frame_id = _data_index++;
 
-			foreach(auto ep, _eps)
+			for (int i = 0; i < _eps.size(); i++)
 			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Data  --^ " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+				log << "[" << time_ms() << "] Data  --^ " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
 #endif
-				_async.queue(ep, msg);
+				_async.queue(_eps[i], msg);
 			}
 		}
 
@@ -461,6 +475,9 @@ namespace shoryu
 		}
 		int delay()
 		{
+#ifdef SHORYU_ENABLE_LOG
+			//log << "[" << time_ms() << "] Your delay is " << _delay << "\n";
+#endif
 			return _delay;
 		}
 		void next_frame()

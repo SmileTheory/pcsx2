@@ -58,11 +58,12 @@ namespace
 		g_pollPort = port - 1;
 		g_pollIndex = 0;
 
-		if(g_pollPort == 0)
+		if(NET_CurrentPad() == 0)
 		{
 			if(g_IOPHook && g_currentCommand == 0x42)
 			{
-				g_IOPHook->NextFrame();
+				if (g_hookFrameNum > 0)
+					g_IOPHook->NextFrame();
 				g_hookFrameNum++;
 			}
 		}
@@ -114,7 +115,7 @@ namespace
 			{
 				value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
 
-				if (g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
+				if (pad == 0 && g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
 					g_IOPHook->AcceptInput(pad);
 			}
 			else if (g_pollIndex > 3 && g_pollIndex < 8)

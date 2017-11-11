@@ -50,22 +50,22 @@
     <Import Condition="$(Configuration.Contains(Release))" Project="..\..\..\common\vsprops\CodeGen_Release.props" />
     <Import Condition="!$(Configuration.Contains(Release))" Project="..\..\..\common\vsprops\IncrementalLinking.props" />
   </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">
+    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+  </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>
     <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>C:\devtools\boost_1_65_1;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\devtools\boost_1_65_1\lib32-msvc-14.1;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>C:\devtools\boost_1_65_1;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\devtools\boost_1_65_1\lib32-msvc-14.1;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">
-    <IncludePath>C:\devtools\boost_1_65_1;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\devtools\boost_1_65_1\lib32-msvc-14.1;$(LibraryPath)</LibraryPath>
-  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'" />
   <ItemDefinitionGroup>
     <ClCompile>
       <AdditionalIncludeDirectories>$(ProjectRootDir)/gui;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
@@ -78,8 +78,11 @@
       <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</RuntimeTypeInfo>
       <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</RuntimeTypeInfo>
-      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">_DEVEL;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeTypeInfo Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">true</RuntimeTypeInfo>
+      <BrowseInformation Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">true</BrowseInformation>
+      <MultiProcessorCompilation Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">true</MultiProcessorCompilation>
+      <MinimalRebuild Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">false</MinimalRebuild>
     </ClCompile>
     <Link>
       <LargeAddressAware>Yes</LargeAddressAware>

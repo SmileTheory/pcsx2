@@ -23,6 +23,21 @@ namespace shoryu
 		EndSession
 	};
 
+	const char *messageTypeNames[] = {
+		"None  ",
+		"Frame ",
+		"Data  ",
+		"Ping  ",
+		"Join  ",
+		"Deny  ",
+		"Info  ",
+		"Wait  ",
+		"Delay ",
+		"Ready ",
+		"EndSn "
+	};
+
+
 	struct message_data
 	{
 		boost::shared_ptr<char[]> p;
@@ -57,7 +72,7 @@ namespace shoryu
 		
 		inline void serialize(shoryu::oarchive& a) const
 		{
-			uint8_t cmdSide = (cmd & 0x1F) | ((side & 0x07) << 5);
+			uint8_t cmdSide = ((int)cmd & 0x1F) | ((side & 0x07) << 5);
 			a << cmdSide;
 			size_t length;
 			switch(cmd)
@@ -104,7 +119,7 @@ namespace shoryu
 		{
 			uint8_t cmdSide;
 			a >> cmdSide;
-			cmd = cmdSide & 0x1F;
+			cmd = (shoryu::MessageType)(cmdSide & 0x1F);
 			side = cmdSide >> 5;
 			unsigned long addr;
 			unsigned short port;
@@ -263,6 +278,36 @@ namespace shoryu
 			return connected;
 		}
 
+		inline void queue_message(message_type &msg)
+		{
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << std::setw(20) << time_ms() << "] ";
+			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
+			log << " (" << _side << ") --^";
+#endif
+			if (_side != 0)
+			{
+				_async.queue(_eps[0], msg);
+#ifdef SHORYU_ENABLE_LOG
+				log << " (0) " << _eps[0].address().to_string() << ":" << (int)_eps[0].port();
+#endif
+			}
+			else
+			{
+				for (int i = 1; i < _eps.size(); i++)
+				{
+#ifdef SHORYU_ENABLE_LOG
+				log << " (" << i << ") " << _eps[i].address().to_string() << ":" << (int)_eps[i].port();
+#endif
+					_async.queue(_eps[i], msg);
+				}
+			}
+
+#ifdef SHORYU_ENABLE_LOG
+			log << "\n";
+#endif
+		}
+
 		inline void clear_queue()
 		{
 			if(_current_state == MessageType::None)
@@ -278,18 +323,8 @@ namespace shoryu
 			std::unique_lock<std::mutex> lock(_mutex);
 			message_type msg(MessageType::EndSession);
 
-			for (int i = 0; i < _eps.size(); i++)
-			{
-				if (i == 1 && _side != 0)
-					break;
-				if (i == _side)
-					continue;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] EndSn --> " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
-#endif
-				_async.queue(_eps[i], msg);
-				_async.send(_eps[i]);
-			}
+			queue_message(msg);
+			send();
 		}
 		inline bool end_session_request()
 		{
@@ -304,18 +339,8 @@ namespace shoryu
 			message_type msg(MessageType::Delay);
 			msg.delay = delay();
 
-			for (int i = 0; i < _eps.size(); i++)
-			{
-				if (i == 1 && _side != 0)
-					break;
-				if (i == _side)
-					continue;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Delay --> " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
-#endif
-				_async.queue(_eps[i], msg);
-				_async.send(_eps[i]);
-			}
+			queue_message(msg);
+			send();
 		}
 
 		inline void queue_data(message_data& data)
@@ -327,17 +352,7 @@ namespace shoryu
 			msg.data = data;
 			msg.frame_id = _data_index++;
 
-			for (int i = 0; i < _eps.size(); i++)
-			{
-				if (i == 1 && _side != 0)
-					break;
-				if (i == _side)
-					continue;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Data  --^ " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
-#endif
-				_async.queue(_eps[i], msg);
-			}
+			queue_message(msg);
 		}
 
 		inline bool get_data(int side, message_data& data, int timeout = 0)
@@ -378,17 +393,7 @@ namespace shoryu
 			msg.frame_id = _frame+_delay;
 			msg.frame = frame;
 			msg.side = _side;
-			for (int i = 0; i < _eps.size(); i++)
-			{
-				if (i == 1 && _side != 0)
-					break;
-				if (i == _side)
-					continue;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Frame " << (int)msg.frame_id << " (" << _side << ") --^ (" << i << ") " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
-#endif
-				_async.queue(_eps[i], msg);
-			}
+			queue_message(msg);
 			send();
 		}
 		inline int send()
@@ -455,7 +460,7 @@ namespace shoryu
 				if (!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
 				{
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
+					log << "[" << std::setw(20) << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
 #endif
 
 					return false;
@@ -963,14 +968,11 @@ namespace shoryu
 		void recv_hdl(const endpoint& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
-			if (msg.cmd == MessageType::Frame)
-				log << "[" << time_ms() << "] Frame " << (int)msg.frame_id << " (" << _side << ") <-- (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == MessageType::Data)
-				log << "[" << time_ms() << "] Data  <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == MessageType::Delay)
-				log << "[" << time_ms() << "] Delay <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == MessageType::EndSession)
-				log << "[" << time_ms() << "] EndSn <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+			log << "[" << std::setw(20) << time_ms() << "] ";
+			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
+			log << " (" << _side << ") <--";
+			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << "\n";
 #endif
 
 			// ignore messages from self

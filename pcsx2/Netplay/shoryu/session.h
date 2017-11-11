@@ -207,7 +207,7 @@ namespace shoryu
 			try_prepare();
 			_state = state;
 			_state_check_handler = handler;
-			_async.receive_handler(boost::bind(&session<FrameType, StateType>::create_recv_handler, this, _1, _2));
+			_async.receive_handler([&](const endpoint& ep, message_type& msg){create_recv_handler(ep, msg);});
 			bool connected = true;
 			if(create_handler(players, timeout) && _current_state != None)
 			{
@@ -223,7 +223,7 @@ namespace shoryu
 #endif
 				connected = false;
 				_current_state = None;
-				_async.receive_handler(boost::bind(&session<FrameType, StateType>::recv_hdl, this, _1, _2));
+				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
 			return connected;
 		}
@@ -233,7 +233,7 @@ namespace shoryu
 			try_prepare();
 			_state = state;
 			_state_check_handler = handler;
-			_async.receive_handler(boost::bind(&session<FrameType, StateType>::join_recv_handler, this, _1, _2));
+			_async.receive_handler([&](const endpoint& ep, message_type& msg){join_recv_handler(ep, msg);});
 			bool connected = true;
 			if(join_handler(ep, timeout) && _current_state != None)
 			{
@@ -249,7 +249,7 @@ namespace shoryu
 #endif
 				connected = false;
 				_current_state = None;
-				_async.receive_handler(boost::bind(&session<FrameType, StateType>::recv_hdl,this, _1, _2));
+				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
 			return connected;
 		}
@@ -594,8 +594,8 @@ namespace shoryu
 			std::unique_lock<std::mutex> lock2(_mutex);
 			_frame_table.resize(_eps.size() + 1);
 			_data_table.resize(_eps.size() + 1);
-			_async.error_handler(boost::bind(&session<FrameType, StateType>::err_hdl, this, _1));
-			_async.receive_handler(boost::bind(&session<FrameType, StateType>::recv_hdl, this, _1, _2));
+			_async.error_handler([&](const error_code &error){err_hdl(error);});
+			_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
 		}
 		int calculate_delay(uint32_t rtt)
 		{

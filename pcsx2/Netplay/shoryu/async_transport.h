@@ -93,7 +93,7 @@ namespace shoryu
 			_socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), port));
 			receive_loop();
 			for(int i=0; i < thread_num; i++)
-				_thread_group.create_thread(boost::bind(&boost::asio::io_service::run, &_io_service));
+				_thread_group.create_thread([&] {_io_service.run(); });
 		}
 		//Not thread-safe. Avoid concurrent calls with other methods
 		void stop()
@@ -189,9 +189,11 @@ namespace shoryu
 			else
 			{
 				_socket.async_send_to(boost::asio::buffer(t.buffer, t.buffer_length), boost::ref(t.ep),
-					boost::bind(&async_transport::send_handler, this, boost::ref(t), 
-					boost::asio::placeholders::bytes_transferred,
-					boost::asio::placeholders::error));
+					[&](const boost::system::error_code &error, std::size_t bytes_transferred)
+					{
+						send_handler(boost::ref(t), bytes_transferred, error);
+					}
+				);
 			}
 			
 			return send_n;
@@ -256,10 +258,12 @@ namespace shoryu
 		void receive_loop()
 		{
 			transaction_data<Recv,BufferSize>& t = _recv_buffer.next();
-			_socket.async_receive_from(boost::asio::buffer(t.buffer, BufferSize), 
-				boost::ref(t.ep), boost::bind(&async_transport::receive_handler, this, 
-				boost::ref(t), boost::asio::placeholders::bytes_transferred,
-				boost::asio::placeholders::error));
+			_socket.async_receive_from(boost::asio::buffer(t.buffer, BufferSize), boost::ref(t.ep),
+				[&](const boost::system::error_code &error, std::size_t bytes_transferred)
+				{
+					receive_handler(boost::ref(t), bytes_transferred, error);
+				}
+			);
 		}
 		void receive_handler( transaction_data<Recv,BufferSize>& t, size_t bytes_recvd, const boost::system::error_code& e)
 		{

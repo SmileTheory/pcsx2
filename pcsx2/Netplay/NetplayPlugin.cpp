@@ -204,7 +204,9 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
-			if(!_session || !_session->join(ep, *state, std::bind(&NetplayPlugin::CheckSyncStates, this, std::placeholders::_1, std::placeholders::_2), timeout))
+			if(!_session || !_session->join(ep, *state,
+				[&](const EmulatorSyncState& s1, const EmulatorSyncState& s2) -> bool
+				{return CheckSyncStates(s1, s2);}, timeout))
 				return false;
 
 			{
@@ -303,7 +305,9 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
-			if(!_session || !_session->create(g_Conf->Net.NumPlayers, *state, boost::bind(&NetplayPlugin::CheckSyncStates, this, _1, _2), timeout))
+			if(!_session || !_session->create(g_Conf->Net.NumPlayers, *state,
+				[&](const EmulatorSyncState& s1, const EmulatorSyncState& s2) -> bool
+				{return CheckSyncStates(s1, s2);}))
 				return false;
 			
 			{

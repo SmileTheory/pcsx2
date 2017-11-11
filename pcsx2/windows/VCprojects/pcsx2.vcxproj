@@ -51,13 +51,13 @@
     <Import Condition="!$(Configuration.Contains(Release))" Project="..\..\..\common\vsprops\IncrementalLinking.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+    <Import Project="$(AppData)\..\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+    <Import Project="$(AppData)\..\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Devel|Win32'">
-    <Import Project="C:\Users\DraconPern\AppData\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
+    <Import Project="$(AppData)\..\Local\Microsoft\MSBuild\v4.0\Microsoft.Cpp.Win32.user.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup>

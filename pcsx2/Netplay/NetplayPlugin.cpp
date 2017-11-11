@@ -211,7 +211,7 @@ public:
 
 			{
 				recursive_lock lock(_mutex);
-				if(!_session || _session->state() != shoryu::Ready)
+				if(!_session || _session->state() != shoryu::MessageType::Ready)
 					return false;
 				_dialog->OnConnectionEstablished(_session->delay());
 				auto ep = _session->endpoints()[0];
@@ -312,7 +312,7 @@ public:
 			
 			{
 				recursive_lock lock(_mutex);
-				if(!_session || _session->state() != shoryu::Ready)
+				if(!_session || _session->state() != shoryu::MessageType::Ready)
 					return false;
 				_dialog->OnConnectionEstablished(_session->delay());
 				auto ep = _session->endpoints()[0];
@@ -337,7 +337,7 @@ public:
 
 			{
 				recursive_lock lock(_mutex);
-				if(!_session || _session->state() != shoryu::Ready)
+				if(!_session || _session->state() != shoryu::MessageType::Ready)
 					return false;
 				if(delay != _session->delay())
 				{
@@ -390,7 +390,7 @@ public:
 			{
 				{
 					recursive_lock lock(_mutex);
-					if(!_session || _session->state() != shoryu::Ready)
+					if(!_session || _session->state() != shoryu::MessageType::Ready)
 						return false;
 					if(!_session->send_sync())
 						break;
@@ -424,7 +424,7 @@ public:
 		{
 			if(_session)
 			{
-				if(_session->state() == shoryu::Ready)
+				if(_session->state() == shoryu::MessageType::Ready)
 				{
 					_session->send_end_session_request();
 					int try_count = _session->delay() * 4;

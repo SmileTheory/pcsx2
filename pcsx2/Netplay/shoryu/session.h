@@ -5,7 +5,7 @@
 
 namespace shoryu
 {
-	enum MessageType : uint8_t
+	enum class MessageType : uint8_t
 	{
 		None,
 		Frame,
@@ -58,27 +58,27 @@ namespace shoryu
 			size_t length;
 			switch(cmd)
 			{
-			case Join:
+			case MessageType::Join:
 				a << state << host_ep.address().to_v4().to_ulong() << host_ep.port();
 				length = username.length();
 				a << length;
 				if(length)
 					a.write((char*)username.c_str(), username.length());
 				break;
-			case Data:
+			case MessageType::Data:
 				a << frame_id << data.data_length;
 				a.write(data.p.get(), data.data_length);
-			case Deny:
+			case MessageType::Deny:
 				a << state;
 				break;
-			case Wait:
+			case MessageType::Wait:
 				a << peers_needed << peers_count;
 				break;
-			case Frame:
+			case MessageType::Frame:
 				a << frame_id;
 				frame.serialize(a);
 				break;
-			case Info:
+			case MessageType::Info:
 				a << rand_seed << side << eps.size();
 				for(size_t i = 0; i < eps.size(); i++)
 				{
@@ -90,7 +90,7 @@ namespace shoryu
 				}
 				a << state;
 				break;
-			case Delay:
+			case MessageType::Delay:
 				a << delay;
 			default:
 				break;
@@ -103,7 +103,7 @@ namespace shoryu
 			unsigned short port;
 			switch(cmd)
 			{
-			case Join:
+			case MessageType::Join:
 				a >> state >> addr >> port;
 				host_ep = endpoint(address_type(addr), port);
 				size_t length;
@@ -115,21 +115,21 @@ namespace shoryu
 					username.assign(str.get(), str.get()+length);
 				}
 				break;
-			case Data:
+			case MessageType::Data:
 				a >> frame_id >> data.data_length;
 				data.p.reset(new char[data.data_length]);
 				a.read(data.p.get(), data.data_length);
-			case Deny:
+			case MessageType::Deny:
 				a >> state;
 				break;
-			case Wait:
+			case MessageType::Wait:
 				a >> peers_needed >> peers_count;
 				break;
-			case Frame:
+			case MessageType::Frame:
 				a >> frame_id;
 				frame.deserialize(a);
 				break;
-			case Info:
+			case MessageType::Info:
 				endpoint_container::size_type size;
 				a >> rand_seed >> side >> size;
 				repeat(size)
@@ -149,7 +149,7 @@ namespace shoryu
 				}
 				a >> state;
 				break;
-			case Delay:
+			case MessageType::Delay:
 				a >> delay;
 			default:
 				break;
@@ -211,7 +211,7 @@ namespace shoryu
 			_state_check_handler = handler;
 			_async.receive_handler([&](const endpoint& ep, message_type& msg){create_recv_handler(ep, msg);});
 			bool connected = true;
-			if(create_handler(players, timeout) && _current_state != None)
+			if(create_handler(players, timeout) && _current_state != MessageType::None)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] Established! ";
@@ -224,7 +224,7 @@ namespace shoryu
 				log << "[" << time_ms() << "] NotEstablished! ";
 #endif
 				connected = false;
-				_current_state = None;
+				_current_state = MessageType::None;
 				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
 			return connected;
@@ -237,7 +237,7 @@ namespace shoryu
 			_state_check_handler = handler;
 			_async.receive_handler([&](const endpoint& ep, message_type& msg){join_recv_handler(ep, msg);});
 			bool connected = true;
-			if(join_handler(ep, timeout) && _current_state != None)
+			if(join_handler(ep, timeout) && _current_state != MessageType::None)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] Established! ";
@@ -250,7 +250,7 @@ namespace shoryu
 				log << "[" << time_ms() << "] NotEstablished! ";
 #endif
 				connected = false;
-				_current_state = None;
+				_current_state = MessageType::None;
 				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
 			return connected;
@@ -258,7 +258,7 @@ namespace shoryu
 
 		inline void clear_queue()
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
 			foreach(auto ep, _eps)
@@ -269,7 +269,7 @@ namespace shoryu
 		{
 			_end_session_request = true;
 			std::unique_lock<std::mutex> lock(_mutex);
-			message_type msg(EndSession);
+			message_type msg(MessageType::EndSession);
 
 			for (int i = 0; i < _eps.size(); i++)
 			{
@@ -291,10 +291,10 @@ namespace shoryu
 
 		inline void reannounce_delay()
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
-			message_type msg(Delay);
+			message_type msg(MessageType::Delay);
 			msg.delay = delay();
 
 			for (int i = 0; i < _eps.size(); i++)
@@ -313,10 +313,10 @@ namespace shoryu
 
 		inline void queue_data(message_data& data)
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
-			message_type msg(Data);
+			message_type msg(MessageType::Data);
 			msg.data = data;
 			msg.frame_id = _data_index++;
 
@@ -335,12 +335,12 @@ namespace shoryu
 
 		inline bool get_data(int side, message_data& data, int timeout = 0)
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 
 			std::unique_lock<std::mutex> lock(_mutex);
 			auto pred = [&]() -> bool {
-				if(_current_state != None)
+				if(_current_state != MessageType::None)
 					return _data_table[side].find(_data_index) != _data_table[side].end();
 				else
 					return true;
@@ -353,7 +353,7 @@ namespace shoryu
 			else
 				_data_cond.wait(lock, pred);
 
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			data = _data_table[side][_data_index];
 			_data_table[side].erase(_data_index);
@@ -363,11 +363,11 @@ namespace shoryu
 		
 		inline void set(const FrameType& frame)
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
 			_frame_table[_side][_frame+_delay] = frame;
-			message_type msg(Frame);
+			message_type msg(MessageType::Frame);
 			msg.frame_id = _frame+_delay;
 			msg.frame = frame;
 			msg.side = _side;
@@ -430,14 +430,14 @@ namespace shoryu
 		}
 		inline bool get(int side, FrameType& f, int64_t frame, int timeout)
 		{
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			if(frame < _delay)
 				return true;
 			std::unique_lock<std::mutex> lock(_mutex);
 
 			auto pred = [&]() -> bool {
-				if(_current_state != None)
+				if(_current_state != MessageType::None)
 					return _frame_table[side].find(frame) != _frame_table[side].end();
 				else
 					return true;
@@ -457,7 +457,7 @@ namespace shoryu
 			else
 				_frame_cond.wait(lock, pred);
 
-			if(_current_state == None)
+			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			f = _frame_table[side][frame];
 			return true;
@@ -589,7 +589,7 @@ namespace shoryu
 			_delay = _side = /*_players =*/ 0;
 			_frame = 0;
 			_data_index = 0;
-			_current_state = None;
+			_current_state = MessageType::None;
 			//_host = false;
 			_eps.clear();
 			_end_session_request = false;
@@ -656,7 +656,7 @@ namespace shoryu
 		bool create_handler(int players, int timeout)
 		{
 			_players_needed = players;
-			_current_state = Wait;
+			_current_state = MessageType::Wait;
 			msec start_time = time_ms();
 			if(timeout)
 			{
@@ -665,7 +665,7 @@ namespace shoryu
 			}
 			else
 				_connection_sem.wait();
-			if(_current_state != Ready)
+			if(_current_state != MessageType::Ready)
 				return false;
 			while(true)
 			{
@@ -680,7 +680,7 @@ namespace shoryu
 		{
 			std::unique_lock<std::mutex> lock(_connection_mutex);
 
-			if(msg.cmd == Join)
+			if(msg.cmd == MessageType::Join)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Join from " << ep.address().to_string() << ":" << ep.port() << "\n";
@@ -688,7 +688,7 @@ namespace shoryu
 				_username_map[ep] = msg.username;
 				if(!_state_check_handler(_state, msg.state))
 				{
-					message_type msg(Deny);
+					message_type msg(MessageType::Deny);
 					msg.state = _state;
 					_async.queue(ep, msg);
 					int t = 5;
@@ -703,9 +703,9 @@ namespace shoryu
 #endif
 					return;
 				}
-				if(_current_state == Wait)
+				if(_current_state == MessageType::Wait)
 				{
-					peer_info pi = { Join, time_ms(), 0 };
+					peer_info pi = { MessageType::Join, time_ms(), 0 };
 					_states[ep] = pi;
 				}
 				else
@@ -715,7 +715,7 @@ namespace shoryu
 				ready_list.push_back(msg.host_ep);
 				foreach(auto kv, _states)
 				{
-					if((time_ms() - kv.second.time < 1000) && kv.second.state == Join)
+					if((time_ms() - kv.second.time < 1000) && kv.second.state == MessageType::Join)
 						ready_list.push_back(kv.first);
 					if(ready_list.size() >= _players_needed )
 						break;
@@ -723,10 +723,10 @@ namespace shoryu
 
 				if(ready_list.size() >= _players_needed)
 				{
-					if(_current_state == Wait)
+					if(_current_state == MessageType::Wait)
 					{
 						message_type msg;
-						msg.cmd = Info;
+						msg.cmd = MessageType::Info;
 						msg.rand_seed = (uint32_t)time(0);
 						msg.eps = ready_list;
 						msg.state = _state;
@@ -746,7 +746,7 @@ namespace shoryu
 							msg.side = i;
 							_async.queue(ready_list[i], msg);
 						}
-						_current_state = Ping;
+						_current_state = MessageType::Ping;
 						_side = 0;
 					}
 					for(size_t i = 1; i < ready_list.size(); i++)
@@ -756,31 +756,31 @@ namespace shoryu
 #endif
 				}
 			}
-			if(msg.cmd == Ping)
+			if(msg.cmd == MessageType::Ping)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Ping ";
 #endif
 				message_type msg;
-				msg.cmd = None;
+				msg.cmd = MessageType::None;
 				_async.queue(ep, msg);
 				send(ep);
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] Out.None ";
 #endif
 			}
-			if(msg.cmd == Delay)
+			if(msg.cmd == MessageType::Delay)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Delay ";
 #endif
-				peer_info pi = { Delay, 0, msg.delay };
+				peer_info pi = { MessageType::Delay, 0, msg.delay };
 				_states[ep] = pi;
 				int ready = 0;
 				int d = 0;
 				foreach(auto kv, _states)
 				{
-					if(kv.second.state == Delay)
+					if(kv.second.state == MessageType::Delay)
 					{
 						d += kv.second.delay;
 						if( ++ready == (_players_needed - 1))
@@ -792,14 +792,14 @@ namespace shoryu
 				}
 				if(ready == (_players_needed - 1))
 				{
-					if(_current_state != Ready)
+					if(_current_state != MessageType::Ready)
 					{
-						message_type msg(Delay);
+						message_type msg(MessageType::Delay);
 						msg.delay = d;
 						delay(d);
 						for(size_t i = 0; i < _eps.size(); i++)
 							_async.queue(_eps[i], msg);
-						_current_state = Ready;
+						_current_state = MessageType::Ready;
 						_connection_sem.post();
 					}
 				}
@@ -816,7 +816,7 @@ namespace shoryu
 					return false;
 				if(timeout > 0 && (time_ms() - start_time > timeout))
 					return false;
-				message_type msg(Join);
+				message_type msg(MessageType::Join);
 				msg.username = _username;
 				msg.host_ep = host_ep;
 				msg.state = _state;
@@ -832,7 +832,7 @@ namespace shoryu
 			}
 			while(!_connection_sem.timed_wait(500));
 
-			if(_current_state == Deny)
+			if(_current_state == MessageType::Deny)
 				return false;
 
 			int i = 150;
@@ -845,7 +845,7 @@ namespace shoryu
 #endif
 				foreach(endpoint& ep, _eps)
 				{
-					_async.queue(ep, message_type(Ping));
+					_async.queue(ep, message_type(MessageType::Ping));
 					send(ep);
 				}
 				shoryu::sleep(50);
@@ -859,7 +859,7 @@ namespace shoryu
 					rtt = peer.rtt_avg;
 			}
 
-			message_type msg(Delay);
+			message_type msg(MessageType::Delay);
 			msg.delay = calculate_delay(rtt);
 			_async.queue(host_ep, msg);
 
@@ -876,7 +876,7 @@ namespace shoryu
 #endif
 				if(timeout > 0 && (time_ms() - start_time > timeout))
 					return false;
-				if(_current_state == Ready)
+				if(_current_state == MessageType::Ready)
 				{
 					if(packet_reached)
 						break;
@@ -885,7 +885,7 @@ namespace shoryu
 			}
 
 			{
-				message_type msg(Ready);
+				message_type msg(MessageType::Ready);
 				_async.queue(host_ep, msg);
 				for(int i = 0; i < delay(); i++)
 				{
@@ -900,7 +900,7 @@ namespace shoryu
 			if(ep != _host_ep)
 				return;
 			std::unique_lock<std::mutex> lock(_connection_mutex);
-			if(msg.cmd == Info)
+			if(msg.cmd == MessageType::Info)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Info ";
@@ -913,41 +913,41 @@ namespace shoryu
 				}
 				//_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
 				std::srand(msg.rand_seed);
-				_current_state = Info;
+				_current_state = MessageType::Info;
 				if(!_state_check_handler(_state, msg.state))
-					_current_state = Deny;
+					_current_state = MessageType::Deny;
 				_connection_sem.post();
 			}
-			if(msg.cmd == Deny)
+			if(msg.cmd == MessageType::Deny)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Deny ";
 #endif
-				_current_state = Deny;
+				_current_state = MessageType::Deny;
 				_state_check_handler(_state, msg.state);
 				_connection_sem.post();
 			}
-			if(msg.cmd == Delay)
+			if(msg.cmd == MessageType::Delay)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Delay ";
 #endif
 				delay(msg.delay);
-				if(_current_state != Ready)
+				if(_current_state != MessageType::Ready)
 				{
-					_current_state = Ready;
+					_current_state = MessageType::Ready;
 				}
-				_async.queue(ep, message_type(Ready));
+				_async.queue(ep, message_type(MessageType::Ready));
 				send(ep);
 				_connection_sem.post();
 			}
-			if(msg.cmd == Ping)
+			if(msg.cmd == MessageType::Ping)
 			{
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] In.Ping ";
 #endif
 				message_type msg;
-				msg.cmd = None;
+				msg.cmd = MessageType::None;
 				_async.queue(ep, msg);
 				send(ep);
 			}
@@ -956,13 +956,13 @@ namespace shoryu
 		void recv_hdl(const endpoint& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
-			if (msg.cmd == Frame)
+			if (msg.cmd == MessageType::Frame)
 				log << "[" << time_ms() << "] Frame " << (int)msg.frame_id << " (" << _side << ") <-- (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == Data)
+			else if (msg.cmd == MessageType::Data)
 				log << "[" << time_ms() << "] Data  <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == Delay)
+			else if (msg.cmd == MessageType::Delay)
 				log << "[" << time_ms() << "] Delay <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
-			else if (msg.cmd == EndSession)
+			else if (msg.cmd == MessageType::EndSession)
 				log << "[" << time_ms() << "] EndSn <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
 #endif
 
@@ -987,7 +987,7 @@ namespace shoryu
 					}
 				}
 
-				if(msg.cmd == Frame)
+				if(msg.cmd == MessageType::Frame)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					_frame_table[side][msg.frame_id] = msg.frame;
@@ -1002,7 +1002,7 @@ namespace shoryu
 						_last_received_frame = msg.frame_id;
 					_frame_cond.notify_all();
 				}
-				if(msg.cmd == Data)
+				if(msg.cmd == MessageType::Data)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					_data_table[side][msg.frame_id] = msg.data;
@@ -1010,14 +1010,14 @@ namespace shoryu
 					if (_side == 0 || side == 0)
 						send(ep);
 				}
-				if(msg.cmd == Delay)
+				if(msg.cmd == MessageType::Delay)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					delay(msg.delay);
 					if (_side == 0 || side == 0)
 						send(ep);
 				}
-				if(msg.cmd == EndSession)
+				if(msg.cmd == MessageType::EndSession)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					_end_session_request = true;

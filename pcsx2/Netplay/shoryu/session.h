@@ -53,7 +53,7 @@ namespace shoryu
 		
 		inline void serialize(shoryu::oarchive& a) const
 		{
-			a << cmd;
+			a << cmd << side;
 			size_t length;
 			switch(cmd)
 			{
@@ -97,7 +97,7 @@ namespace shoryu
 		}
 		inline void deserialize(shoryu::iarchive& a)
 		{
-			a >> cmd;
+			a >> cmd >> side;
 			unsigned long addr;
 			unsigned short port;
 			switch(cmd)
@@ -162,7 +162,6 @@ namespace shoryu
 		typedef message<FrameType, StateType> message_type;
 		typedef std::vector<endpoint> endpoint_container;
 		typedef std::unordered_map<int64_t, FrameType> frame_map;
-		typedef std::unordered_map<endpoint, int> side_map;
 		typedef std::vector<frame_map> frame_table;
 		typedef std::function<bool(const StateType&, const StateType&)> state_check_handler_type;
 		typedef std::vector<std::unordered_map<int64_t, message_data>> data_table;
@@ -270,8 +269,12 @@ namespace shoryu
 			_end_session_request = true;
 			boost::unique_lock<boost::mutex> lock(_mutex);
 			message_type msg(EndSession);
+
 			foreach(auto ep, _eps)
 			{
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() << "] EndSn --> " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+#endif
 				_async.queue(ep, msg);
 				_async.send(ep);
 			}
@@ -288,8 +291,12 @@ namespace shoryu
 			boost::unique_lock<boost::mutex> lock(_mutex);
 			message_type msg(Delay);
 			msg.delay = delay();
+
 			foreach(auto ep, _eps)
 			{
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() << "] Delay --> " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+#endif
 				_async.queue(ep, msg);
 				_async.send(ep);
 			}
@@ -303,8 +310,14 @@ namespace shoryu
 			message_type msg(Data);
 			msg.data = data;
 			msg.frame_id = _data_index++;
+
 			foreach(auto ep, _eps)
+			{
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() << "] Data  --^ " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+#endif
 				_async.queue(ep, msg);
+			}
 		}
 
 		inline bool get_data(int side, message_data& data, int timeout = 0)
@@ -344,22 +357,44 @@ namespace shoryu
 			message_type msg(Frame);
 			msg.frame_id = _frame+_delay;
 			msg.frame = frame;
-			foreach(auto ep, _eps)
-				_async.queue(ep, msg);
+			msg.side = _side;
+			for (int i = 0; i < _eps.size(); i++)
+			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() << "] Frame " << (int)msg.frame_id << " (" << _side << ") --^ (" << i << ") " << _eps[i].address().to_string() << ":" << (int)_eps[i].port() << "\n";
+#endif
+				_async.queue(_eps[i], msg);
+			}
 			send();
 		}
 		inline int send()
 		{
 			int n = 0;
-			foreach(auto ep, _eps)
-				n += send(ep);
+			for (int i = 0; i < _eps.size(); i++)
+			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
+				n += send(_eps[i]);
+			}
 			return n;
 		}
 		inline int send_sync()
 		{
 			int n = 0;
-			foreach(auto ep, _eps)
-				n += send_sync(ep);
+			for (int i = 0; i < _eps.size(); i++)
+			{
+				if (i == 1 && _side != 0)
+					break;
+				if (i == _side)
+					continue;
+				n += send_sync(_eps[i]);
+			}
 			return n;
 		}
 		inline int send_sync(const endpoint& ep)
@@ -393,6 +428,9 @@ namespace shoryu
 				else
 					return true;
 			};
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << time_ms() << "] Waiting for frame " << frame << " side " << side << "\n";
+#endif
 			if(timeout > 0)
 			{
 				if(!_frame_cond.timed_wait(lock, boost::posix_time::millisec(timeout), pred))
@@ -545,6 +583,14 @@ namespace shoryu
 		}
 		void connection_established()
 		{
+#ifdef SHORYU_ENABLE_LOG
+			foreach(endpoint& ep, _eps)
+			{
+				std::string s = ep.address().to_string();
+				s += ":" + std::to_string(ep.port());
+				log << "\nep " << s << "\n";
+			}
+#endif
 			boost::unique_lock<boost::mutex> lock1(_connection_mutex);
 			boost::unique_lock<boost::mutex> lock2(_mutex);
 			_frame_table.resize(_eps.size() + 1);
@@ -666,14 +712,13 @@ namespace shoryu
 						_eps = ready_list;
 						for(size_t i = 0; i < _eps.size(); i++)
 						{
-							_sides[_eps[i]] = i;
 							if(i != _side)
 								msg.usernames.push_back(_username_map[_eps[i]]);
 							else
 								msg.usernames.push_back(_username);
 						}
 
-						_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
+						//_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
 						srand(msg.rand_seed);
 						for(size_t i = 1; i < ready_list.size(); i++)
 						{
@@ -843,10 +888,9 @@ namespace shoryu
 				_eps = msg.eps;
 				for(size_t i = 0; i < _eps.size(); i++)
 				{
-					_sides[_eps[i]] = i;
 					_username_map[_eps[i]] = msg.usernames[i];
 				}
-				_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
+				//_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
 				std::srand(msg.rand_seed);
 				_current_state = Info;
 				if(!_state_check_handler(_state, msg.state))
@@ -890,9 +934,38 @@ namespace shoryu
 		
 		void recv_hdl(const endpoint& ep, message_type& msg)
 		{
-			if(_sides.find(ep) != _sides.end())
+#ifdef SHORYU_ENABLE_LOG
+			if (msg.cmd == Frame)
+				log << "[" << time_ms() << "] Frame " << (int)msg.frame_id << " (" << _side << ") <-- (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+			else if (msg.cmd == Data)
+				log << "[" << time_ms() << "] Data  <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+			else if (msg.cmd == Delay)
+				log << "[" << time_ms() << "] Delay <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+			else if (msg.cmd == EndSession)
+				log << "[" << time_ms() << "] EndSn <-- " << ep.address().to_string() << ":" << (int)ep.port() << "\n";
+#endif
+
+			// ignore messages from self
+			// FIXME: this shouldn't happen, track down if it does.
+			if (msg.side == _side)
+				return;
+
+			//if(_sides.find(ep) != _sides.end())
 			{
-				int side = _sides[ep];
+				int side = msg.side; //_sides[ep];
+
+				// if we're server, echo to everyone else
+				if (_side == 0 && side != 0)
+				{
+					for (int i = 1; i < _eps.size(); i++)
+					{
+						if (i == side)
+							continue;
+						_async.queue(_eps[i], msg);
+						send(_eps[i]);
+					}
+				}
+
 				if(msg.cmd == Frame)
 				{
 					boost::unique_lock<boost::mutex> lock(_mutex);
@@ -913,19 +986,22 @@ namespace shoryu
 					boost::unique_lock<boost::mutex> lock(_mutex);
 					_data_table[side][msg.frame_id] = msg.data;
 					_data_cond.notify_all();
-					send(ep);
+					if (_side == 0 || side == 0)
+						send(ep);
 				}
 				if(msg.cmd == Delay)
 				{
 					boost::unique_lock<boost::mutex> lock(_mutex);
 					delay(msg.delay);
-					send(ep);
+					if (_side == 0 || side == 0)
+						send(ep);
 				}
 				if(msg.cmd == EndSession)
 				{
 					boost::unique_lock<boost::mutex> lock(_mutex);
 					_end_session_request = true;
-					send(ep);
+					if (_side == 0 || side == 0)
+						send(ep);
 				}
 			}
 		}
@@ -950,7 +1026,6 @@ namespace shoryu
 		username_map _username_map;
 		std::string _last_error;
 
-		side_map _sides;
 		async_transport<message_type> _async;
 		endpoint_container _eps;
 		frame_table _frame_table;

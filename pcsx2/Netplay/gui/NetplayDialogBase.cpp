@@ -32,8 +32,14 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	
 	bSizer4->Add( m_contentSizer, 1, wxEXPAND, 5 );
 	
-	m_quitButton = new wxButton( this, wxID_ANY, _("Quit"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer4->Add( m_quitButton, 0, wxALIGN_RIGHT|wxALL, 5 );
+	m_dialogButtonSizer = new wxStdDialogButtonSizer();
+	m_dialogButtonSizerOK = new wxButton( this, wxID_OK );
+	m_dialogButtonSizer->AddButton( m_dialogButtonSizerOK );
+	m_dialogButtonSizerCancel = new wxButton( this, wxID_CANCEL );
+	m_dialogButtonSizer->AddButton( m_dialogButtonSizerCancel );
+	m_dialogButtonSizer->Realize();
+	
+	bSizer4->Add( m_dialogButtonSizer, 0, wxALIGN_RIGHT, 5 );
 	
 	
 	this->SetSizer( bSizer4 );
@@ -43,14 +49,16 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	
 	// Connect Events
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( NetplayDialogBase::OnClose ) );
-	m_quitButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnQuit ), NULL, this );
+	m_dialogButtonSizerCancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnCancelButtonClick ), NULL, this );
+	m_dialogButtonSizerOK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnOKButtonClick ), NULL, this );
 }
 
 NetplayDialogBase::~NetplayDialogBase()
 {
 	// Disconnect Events
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( NetplayDialogBase::OnClose ) );
-	m_quitButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnQuit ), NULL, this );
+	m_dialogButtonSizerCancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnCancelButtonClick ), NULL, this );
+	m_dialogButtonSizerOK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnOKButtonClick ), NULL, this );
 	
 }
 
@@ -58,6 +66,19 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 {
 	wxBoxSizer* bSizer2;
 	bSizer2 = new wxBoxSizer( wxVERTICAL );
+	
+	wxBoxSizer* bSizer12;
+	bSizer12 = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_usernameLabel = new wxStaticText( this, wxID_ANY, _("Username:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_usernameLabel->Wrap( -1 );
+	bSizer12->Add( m_usernameLabel, 0, wxALL, 5 );
+	
+	m_usernameTextCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer12->Add( m_usernameTextCtrl, 1, wxALL|wxEXPAND, 5 );
+	
+	
+	bSizer2->Add( bSizer12, 0, wxEXPAND, 5 );
 	
 	wxBoxSizer* bSizer1;
 	bSizer1 = new wxBoxSizer( wxHORIZONTAL );
@@ -76,13 +97,6 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	fgSizer3->AddGrowableCol( 1 );
 	fgSizer3->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
-	
-	m_usernameLabel = new wxStaticText( this, wxID_ANY, _("Username:"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_usernameLabel->Wrap( -1 );
-	fgSizer3->Add( m_usernameLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
-	
-	m_usernameTextCtrl = new wxTextCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer3->Add( m_usernameTextCtrl, 0, wxALL|wxEXPAND, 5 );
 	
 	m_hostAddressLabel = new wxStaticText( this, wxID_ANY, _("Host Address:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_hostAddressLabel->Wrap( -1 );
@@ -113,6 +127,20 @@ NetplaySettingsPanelBase::NetplaySettingsPanelBase( wxWindow* parent, wxWindowID
 	
 	m_readOnlyMCDCheckBox = new wxCheckBox( this, wxID_ANY, _("Read-only Memory Card"), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizer2->Add( m_readOnlyMCDCheckBox, 0, wxALL, 5 );
+	
+	m_notebook3 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	m_panel2 = new wxPanel( m_notebook3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_notebook3->AddPage( m_panel2, _("Connect"), false );
+	m_panel3 = new wxPanel( m_notebook3, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_notebook3->AddPage( m_panel3, _("Host"), false );
+	
+	bSizer2->Add( m_notebook3, 1, wxEXPAND | wxALL, 5 );
+	
+	m_button6 = new wxButton( this, wxID_OK, _("Connect"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer2->Add( m_button6, 0, wxALL, 5 );
+	
+	m_button7 = new wxButton( this, wxID_OK, _("Host"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer2->Add( m_button7, 0, wxALL, 5 );
 	
 	
 	this->SetSizer( bSizer2 );
@@ -219,4 +247,22 @@ NetplayLobbyPanelBase::~NetplayLobbyPanelBase()
 	m_NetplayConsoleEntryTextCtrl->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnTextEnter ), NULL, this );
 	m_startButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnStart ), NULL, this );
 	
+}
+
+MyPanel3::MyPanel3( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+{
+	wxBoxSizer* bSizer11;
+	bSizer11 = new wxBoxSizer( wxVERTICAL );
+	
+	m_notebook2 = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
+	
+	bSizer11->Add( m_notebook2, 1, wxEXPAND | wxALL, 5 );
+	
+	
+	this->SetSizer( bSizer11 );
+	this->Layout();
+}
+
+MyPanel3::~MyPanel3()
+{
 }

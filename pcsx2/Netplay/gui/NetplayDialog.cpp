@@ -39,7 +39,14 @@ void NetplayDialog::SetReadonly(bool readonly)
 	if(m_content)
 		m_content->Enable(!readonly);
 }
-
+void NetplayDialog::EnableOK(bool enable)
+{
+	this->m_dialogButtonSizer->GetAffirmativeButton()->Enable(enable);
+}
+void NetplayDialog::EnableCancel(bool enable)
+{
+	this->m_dialogButtonSizer->GetCancelButton()->Enable(enable);
+}
 void NetplayDialog::SetOKHandler(const event_handler_type& handler)
 {
 	m_ok_handler = handler;

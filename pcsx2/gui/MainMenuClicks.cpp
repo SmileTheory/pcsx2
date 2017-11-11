@@ -514,12 +514,26 @@ void MainEmuFrame::_DoBootCdvdWithNetplay()
 
 	dialog->SetConnectionSettingsHandler([&]() {
 		INetplayDialog* dialog = INetplayDialog::GetInstance();
-		dialog->SetStatus(wxT("Waiting for connection..."));
+		switch (dialog->GetSettings().Mode)
+		{
+			case ConnectMode:
+				dialog->SetStatus(wxT("Connecting..."));
+				break;
+			case HostMode:
+				dialog->SetStatus(wxT("Waiting for connection(s)..."));
+				break;
+			case ObserveMode:
+				dialog->SetStatus(wxT("Connecting..."));
+				break;
+		}
 		g_Conf->Net = dialog->GetSettings();
 		dialog->SetCloseEventHandler([&]() {
 			INetplayPlugin::GetInstance().Interrupt();
 		});
 		g_Conf->Net.IsEnabled = true;
+
+		// dialog->OnConnectionStarted();
+
 		sApp.SysExecute( g_Conf->CdvdSource );
 	});
 	dialog->SetCloseEventHandler([&]() {

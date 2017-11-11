@@ -204,7 +204,7 @@
     <ClCompile Include="..\..\IopGte.cpp" />
     <ClCompile Include="..\..\IPU\IPUdma.cpp" />
     <ClCompile Include="..\..\Netplay\EmulatorState.cpp" />
-    <ClCompile Include="..\..\Netplay\gui\InputDelayPanel.cpp" />
+    <ClCompile Include="..\..\Netplay\gui\NetplayLobbyPanel.cpp" />
     <ClCompile Include="..\..\Netplay\gui\NetplayDialog.cpp" />
     <ClCompile Include="..\..\Netplay\gui\NetplayDialogBase.cpp" />
     <ClCompile Include="..\..\Netplay\gui\NetplaySettingsPanel.cpp" />
@@ -476,7 +476,7 @@
     <ClInclude Include="..\..\IopGte.h" />
     <ClInclude Include="..\..\IPU\IPUdma.h" />
     <ClInclude Include="..\..\Netplay\EmulatorState.h" />
-    <ClInclude Include="..\..\Netplay\gui\InputDelayPanel.h" />
+    <ClInclude Include="..\..\Netplay\gui\NetplayLobbyPanel.h" />
     <ClInclude Include="..\..\Netplay\gui\NetplayDialog.h" />
     <ClInclude Include="..\..\Netplay\gui\NetplayDialogBase.h" />
     <ClInclude Include="..\..\Netplay\gui\NetplaySettingsPanel.h" />

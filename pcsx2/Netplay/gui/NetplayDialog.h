@@ -8,7 +8,7 @@
 #include "Netplay\NetplaySettings.h"
 #include "NetplaySettingsPanel.h"
 #pragma once
-#include "InputDelayPanel.h"
+#include "NetplayLobbyPanel.h"
 
 class NetplayDialog : public NetplayDialogBase
 {
@@ -24,7 +24,7 @@ public:
 	void SetOKHandler(const event_handler_type& handler);
 	void SetCloseEventHandler(const event_handler_type& handler);
 	NetplaySettingsPanel& GetSettingsPanel();
-	InputDelayPanel& GetInputDelayPanel();
+	NetplayLobbyPanel& GetLobbyPanel();
 	void SetContent(wxPanel* content);
 	void OnClose( wxCloseEvent& event );
 	wxPanel* GetContent();
@@ -33,7 +33,7 @@ protected:
 	void OnOKButtonClick( wxCommandEvent& event );
 
 	NetplaySettingsPanel m_settingsPanel;
-	InputDelayPanel m_inputDelayPanel;
+	NetplayLobbyPanel m_lobbyPanel;
 
 	event_handler_type m_ok_handler;
 	event_handler_type m_close_handler;

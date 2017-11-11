@@ -8,6 +8,8 @@
 #ifndef __NETPLAYDIALOGBASE_H__
 #define __NETPLAYDIALOGBASE_H__
 
+#include <wx/artprov.h>
+//#include <wx/xrc/xmlres.h>
 #include <wx/intl.h>
 #include <wx/string.h>
 #include <wx/stattext.h>
@@ -24,6 +26,8 @@
 #include <wx/spinctrl.h>
 #include <wx/checkbox.h>
 #include <wx/panel.h>
+#include <wx/statbox.h>
+#include <wx/listbox.h>
 
 ///////////////////////////////////////////////////////////////////////////
 
@@ -39,14 +43,11 @@ class NetplayDialogBase : public wxDialog
 		wxStaticText* m_statusText;
 		wxStaticLine* m_staticline1;
 		wxBoxSizer* m_contentSizer;
-		wxStdDialogButtonSizer* m_dialogButtonSizer;
-		wxButton* m_dialogButtonSizerOK;
-		wxButton* m_dialogButtonSizerCancel;
+		wxButton* m_quitButton;
 		
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnClose( wxCloseEvent& event ) { event.Skip(); }
-		virtual void OnCancelButtonClick( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnOKButtonClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnQuit( wxCommandEvent& event ) { event.Skip(); }
 		
 	
 	public:
@@ -89,20 +90,32 @@ class NetplaySettingsPanelBase : public wxPanel
 };
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Class InputDelayPanelBase
+/// Class NetplayLobbyPanelBase
 ///////////////////////////////////////////////////////////////////////////////
-class InputDelayPanelBase : public wxPanel 
+class NetplayLobbyPanelBase : public wxPanel 
 {
 	private:
 	
 	protected:
+		wxTextCtrl* m_NetplayChatTextCtrl;
+		wxTextCtrl* m_NetplayConsoleEntryTextCtrl;
+		wxButton* m_sendButton;
+		wxListBox* m_playersBox;
+		wxButton* m_moveUpButton;
+		wxButton* m_moveDownButton;
+		wxButton* m_startButton;
 		wxStaticText* m_inputDelayLabel;
 		wxSpinCtrl* m_inputDelaySpinner;
+		
+		// Virtual event handlers, overide them in your derived class
+		virtual void OnTextEnter( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnStart( wxCommandEvent& event ) { event.Skip(); }
+		
 	
 	public:
 		
-		InputDelayPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,300 ), long style = wxTAB_TRAVERSAL ); 
-		~InputDelayPanelBase();
+		NetplayLobbyPanelBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 530,336 ), long style = wxTAB_TRAVERSAL ); 
+		~NetplayLobbyPanelBase();
 	
 };
 

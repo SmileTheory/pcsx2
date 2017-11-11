@@ -32,14 +32,8 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	
 	bSizer4->Add( m_contentSizer, 1, wxEXPAND, 5 );
 	
-	m_dialogButtonSizer = new wxStdDialogButtonSizer();
-	m_dialogButtonSizerOK = new wxButton( this, wxID_OK );
-	m_dialogButtonSizer->AddButton( m_dialogButtonSizerOK );
-	m_dialogButtonSizerCancel = new wxButton( this, wxID_CANCEL );
-	m_dialogButtonSizer->AddButton( m_dialogButtonSizerCancel );
-	m_dialogButtonSizer->Realize();
-	
-	bSizer4->Add( m_dialogButtonSizer, 0, wxALIGN_CENTER_VERTICAL|wxALL|wxEXPAND, 5 );
+	m_quitButton = new wxButton( this, wxID_ANY, _("Quit"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer4->Add( m_quitButton, 0, wxALIGN_RIGHT|wxALL, 5 );
 	
 	
 	this->SetSizer( bSizer4 );
@@ -49,16 +43,14 @@ NetplayDialogBase::NetplayDialogBase( wxWindow* parent, wxWindowID id, const wxS
 	
 	// Connect Events
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( NetplayDialogBase::OnClose ) );
-	m_dialogButtonSizerCancel->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnCancelButtonClick ), NULL, this );
-	m_dialogButtonSizerOK->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnOKButtonClick ), NULL, this );
+	m_quitButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnQuit ), NULL, this );
 }
 
 NetplayDialogBase::~NetplayDialogBase()
 {
 	// Disconnect Events
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( NetplayDialogBase::OnClose ) );
-	m_dialogButtonSizerCancel->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnCancelButtonClick ), NULL, this );
-	m_dialogButtonSizerOK->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnOKButtonClick ), NULL, this );
+	m_quitButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayDialogBase::OnQuit ), NULL, this );
 	
 }
 
@@ -139,32 +131,92 @@ NetplaySettingsPanelBase::~NetplaySettingsPanelBase()
 	
 }
 
-InputDelayPanelBase::InputDelayPanelBase( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
+NetplayLobbyPanelBase::NetplayLobbyPanelBase( wxWindow* parent, wxWindowID id, const wxPoint& pos, const wxSize& size, long style ) : wxPanel( parent, id, pos, size, style )
 {
 	wxBoxSizer* bSizer10;
 	bSizer10 = new wxBoxSizer( wxVERTICAL );
 	
-	wxBoxSizer* bSizer11;
-	bSizer11 = new wxBoxSizer( wxHORIZONTAL );
+	wxFlexGridSizer* fgSizer2;
+	fgSizer2 = new wxFlexGridSizer( 0, 2, 0, 0 );
+	fgSizer2->AddGrowableCol( 0 );
+	fgSizer2->AddGrowableRow( 0 );
+	fgSizer2->SetFlexibleDirection( wxHORIZONTAL );
+	fgSizer2->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	
+	wxStaticBoxSizer* sbSizer1;
+	sbSizer1 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Chat") ), wxVERTICAL );
+	
+	wxBoxSizer* bSizer8;
+	bSizer8 = new wxBoxSizer( wxVERTICAL );
+	
+	m_NetplayChatTextCtrl = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_MULTILINE|wxTE_READONLY|wxTE_WORDWRAP );
+	bSizer8->Add( m_NetplayChatTextCtrl, 1, wxEXPAND, 5 );
+	
+	
+	sbSizer1->Add( bSizer8, 1, wxEXPAND, 5 );
+	
+	wxBoxSizer* bSizer7;
+	bSizer7 = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_NetplayConsoleEntryTextCtrl = new wxTextCtrl( sbSizer1->GetStaticBox(), wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER );
+	bSizer7->Add( m_NetplayConsoleEntryTextCtrl, 1, wxBOTTOM|wxEXPAND|wxTOP, 5 );
+	
+	m_sendButton = new wxButton( sbSizer1->GetStaticBox(), wxID_ANY, _("Send"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer7->Add( m_sendButton, 0, wxALIGN_RIGHT|wxBOTTOM|wxLEFT|wxTOP, 5 );
+	
+	
+	sbSizer1->Add( bSizer7, 0, wxALIGN_BOTTOM|wxEXPAND, 5 );
+	
+	
+	fgSizer2->Add( sbSizer1, 1, wxEXPAND|wxRIGHT, 5 );
+	
+	wxStaticBoxSizer* sbSizer2;
+	sbSizer2 = new wxStaticBoxSizer( new wxStaticBox( this, wxID_ANY, _("Players") ), wxVERTICAL );
+	
+	m_playersBox = new wxListBox( sbSizer2->GetStaticBox(), wxID_ANY, wxDefaultPosition, wxDefaultSize, 0, NULL, 0 ); 
+	sbSizer2->Add( m_playersBox, 1, wxEXPAND, 5 );
+	
+	m_moveUpButton = new wxButton( sbSizer2->GetStaticBox(), wxID_ANY, _("Move up"), wxDefaultPosition, wxDefaultSize, 0 );
+	sbSizer2->Add( m_moveUpButton, 0, wxALIGN_BOTTOM|wxEXPAND|wxTOP, 5 );
+	
+	m_moveDownButton = new wxButton( sbSizer2->GetStaticBox(), wxID_ANY, _("Move down"), wxDefaultPosition, wxDefaultSize, 0 );
+	sbSizer2->Add( m_moveDownButton, 0, wxBOTTOM|wxEXPAND|wxTOP, 5 );
+	
+	
+	fgSizer2->Add( sbSizer2, 1, wxEXPAND, 5 );
+	
+	
+	bSizer10->Add( fgSizer2, 1, wxEXPAND, 5 );
+	
+	wxBoxSizer* bSizer9;
+	bSizer9 = new wxBoxSizer( wxHORIZONTAL );
+	
+	m_startButton = new wxButton( this, wxID_ANY, _("Start"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizer9->Add( m_startButton, 0, wxALL, 5 );
 	
 	m_inputDelayLabel = new wxStaticText( this, wxID_ANY, _("Input Delay:"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_inputDelayLabel->Wrap( -1 );
-	bSizer11->Add( m_inputDelayLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	bSizer9->Add( m_inputDelayLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 	
-	m_inputDelaySpinner = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 15, 1 );
-	bSizer11->Add( m_inputDelaySpinner, 1, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
-	
-	
-	bSizer10->Add( bSizer11, 0, wxEXPAND, 5 );
+	m_inputDelaySpinner = new wxSpinCtrl( this, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 30, 15 );
+	bSizer9->Add( m_inputDelaySpinner, 0, wxALL|wxTOP, 5 );
 	
 	
-	bSizer10->Add( 0, 0, 1, wxEXPAND, 5 );
+	bSizer10->Add( bSizer9, 0, wxEXPAND, 5 );
 	
 	
 	this->SetSizer( bSizer10 );
 	this->Layout();
+	
+	// Connect Events
+	m_NetplayConsoleEntryTextCtrl->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnTextEnter ), NULL, this );
+	m_startButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnStart ), NULL, this );
 }
 
-InputDelayPanelBase::~InputDelayPanelBase()
+NetplayLobbyPanelBase::~NetplayLobbyPanelBase()
 {
+	// Disconnect Events
+	m_NetplayConsoleEntryTextCtrl->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnTextEnter ), NULL, this );
+	m_startButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnStart ), NULL, this );
+	
 }

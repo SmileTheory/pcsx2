@@ -119,7 +119,7 @@ public:
 		_cond->wait(lock);
 		_phase = _operation_success ? Ready : None;
 		if(m_dialog && _operation_success)
-			return m_dialog->GetInputDelayPanel().GetInputDelay();
+			return m_dialog->GetLobbyPanel().GetInputDelay();
 		else
 			return -1;
 	}
@@ -131,7 +131,7 @@ public:
 			if(!m_dialog)
 				return;
 			m_dialog->EnableOK(true);
-			InputDelayPanel& p = m_dialog->GetInputDelayPanel();
+			NetplayLobbyPanel& p = m_dialog->GetLobbyPanel();
 			p.SetInputDelay(input_delay);
 			p.SetReadOnly(GetSettings().Mode != HostMode);
 
@@ -141,7 +141,7 @@ public:
 	int GetInputDelay()
 	{
 		if(m_dialog)
-			return m_dialog->GetInputDelayPanel().GetInputDelay();
+			return m_dialog->GetLobbyPanel().GetInputDelay();
 		else
 			return -1;
 	}
@@ -149,7 +149,7 @@ public:
 	{
 		Utilities::ExecuteOnMainThread([&]() {
 			if(m_dialog)
-				m_dialog->GetInputDelayPanel().SetInputDelay(input_delay);
+				m_dialog->GetLobbyPanel().SetInputDelay(input_delay);
 		});
 	}
 	void SetStatus(const wxString& status)

@@ -1,9 +1,9 @@
 #include "NetplayDialogBase.h"
 
-class InputDelayPanel : public InputDelayPanelBase
+class NetplayLobbyPanel : public NetplayLobbyPanelBase
 {
 public:
-	InputDelayPanel( wxWindow* parent );
+	NetplayLobbyPanel( wxWindow* parent );
 	void SetInputDelay(int value);
 	int GetInputDelay();
 	void SetReadOnly(bool readonly = true);

@@ -39,14 +39,7 @@ void NetplayDialog::SetReadonly(bool readonly)
 	if(m_content)
 		m_content->Enable(!readonly);
 }
-void NetplayDialog::EnableOK(bool enable)
-{
-	this->m_dialogButtonSizerOK->Enable(enable);
-}
-void NetplayDialog::EnableCancel(bool enable)
-{
-	this->m_dialogButtonSizerCancel->Enable(enable);
-}
+
 void NetplayDialog::SetOKHandler(const event_handler_type& handler)
 {
 	m_ok_handler = handler;
@@ -64,16 +57,16 @@ const NetplaySettings& NetplayDialog::GetSettings()
 	return m_settingsPanel.GetSettings();
 }
 NetplayDialog::NetplayDialog(wxWindow* parent) 
-	: NetplayDialogBase(parent), m_content(0), m_settingsPanel(this), m_inputDelayPanel(this)
+	: NetplayDialogBase(parent), m_content(0), m_settingsPanel(this), m_lobbyPanel(this)
 {
-	m_inputDelayPanel.Hide();
+	m_lobbyPanel.Hide();
 	SetContent(&m_settingsPanel);
 }
 NetplaySettingsPanel& NetplayDialog::GetSettingsPanel()
 {
 	return m_settingsPanel;
 }
-InputDelayPanel& NetplayDialog::GetInputDelayPanel()
+NetplayLobbyPanel& NetplayDialog::GetLobbyPanel()
 {
-	return m_inputDelayPanel;
+	return m_lobbyPanel;
 }

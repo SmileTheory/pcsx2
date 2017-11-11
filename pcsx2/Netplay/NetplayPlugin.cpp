@@ -204,7 +204,7 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
-			if(!_session || !_session->join(ep, *state, boost::bind(&NetplayPlugin::CheckSyncStates, this, _1, _2), timeout))
+			if(!_session || !_session->join(ep, *state, std::bind(&NetplayPlugin::CheckSyncStates, this, std::placeholders::_1, std::placeholders::_2), timeout))
 				return false;
 
 			{

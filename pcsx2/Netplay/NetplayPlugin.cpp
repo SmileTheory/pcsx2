@@ -20,7 +20,7 @@ class NetplayPlugin : public INetplayPlugin
 {
 	typedef shoryu::session<Message, EmulatorSyncState> session_type;
 	std::shared_ptr<session_type> _session;
-	std::shared_ptr<boost::thread> _thread;
+	std::shared_ptr<std::thread> _thread;
 public:
 	NetplayPlugin()
 		: _is_initialized(false), _is_stopped(false), _dialog(0)
@@ -82,7 +82,7 @@ public:
 			else
 				connection_func = [this]() { return Host(0); };
 
-			_thread.reset(new boost::thread([this, connection_func]() {
+			_thread.reset(new std::thread([this, connection_func]() {
 				_state = connection_func() ? SSReady : SSCancelled;
 				if(_dialog)
 					_dialog->Close();
@@ -160,10 +160,13 @@ public:
 			});
 		}
 		else
-			boost::thread t([=]() {
+		{
+			std::thread t([=]() {
 				while(!check()) shoryu::sleep(100);
 				ConsoleInfoMT(message);
-		});
+			});
+			t.detach();
+		}
 	}
 	void ConsoleErrorMT(const wxString& message, std::function<bool()> check = std::function<bool()>())
 	{
@@ -174,10 +177,13 @@ public:
 			});
 		}
 		else
-			boost::thread t([=]() {
+		{
+			std::thread t([=]() {
 				while(!check()) shoryu::sleep(100);
 				ConsoleErrorMT(message);
-		});
+			});
+			t.detach();
+		}
 	}
 	void ConsoleWarningMT(const wxString& message, std::function<bool()> check = std::function<bool()>())
 	{
@@ -188,10 +194,13 @@ public:
 			});
 		}
 		else
-			boost::thread t([=]() {
+		{
+			std::thread t([=]() {
 				while(!check()) shoryu::sleep(100);
 				ConsoleWarningMT(message);
-		});
+			});
+			t.detach();
+		}
 	}
 	bool Connect(const wxString& ip, unsigned short port, int timeout)
 	{
@@ -471,7 +480,11 @@ public:
 		}*/
 		if(_state == SSReady)
 		{
-			if(_thread) _thread.reset();
+			if(_thread)
+			{
+				_thread->detach();
+				_thread.reset();
+			}
 			_state = SSRunning;
 		}
 	}
@@ -550,7 +563,7 @@ public:
 		auto timeout = shoryu::time_ms() + 10000;
 		try
 		{
-			while(!_session->get(side, frame, _session->delay() / 2))
+			while(!_session->get(side, frame, _session->delay()*17))
 			{
 				_session->send();
 				if(_session->end_session_request())

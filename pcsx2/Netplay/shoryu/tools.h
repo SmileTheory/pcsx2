@@ -1,8 +1,9 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include <chrono>
+#include <thread>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/date_time/local_time/local_time.hpp>
 #include <boost/system/system_error.hpp>
 
 
@@ -23,19 +24,11 @@ namespace shoryu
 
 	inline void sleep( uint32_t msec ) 
 	{
-		boost::xtime xt; 
-		boost::xtime_get(&xt, boost::TIME_UTC_);
-		msec += xt.nsec / 1000000;
-		uint32_t sec = msec / MS_IN_SEC;
-		msec %= MS_IN_SEC;
-		xt.nsec = msec*1000000;
-		xt.sec += sec;
-		boost::thread::sleep(xt); 
+		std::this_thread::sleep_for(std::chrono::milliseconds(msec));
 	}
 
-	inline msec time_ms(const date& origin = date(1970,1,1)) {
-		using namespace boost::posix_time;
-		return (microsec_clock::universal_time() - ptime(origin)).total_milliseconds();
+	inline msec time_ms() {
+		return std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 	}
 		
 	//TODO

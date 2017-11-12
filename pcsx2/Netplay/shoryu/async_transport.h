@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <array>
 #include <unordered_map>
+#include <thread>
 
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
-#include <boost/thread/thread.hpp>
 #include <boost/foreach.hpp>
 #include <boost/function.hpp>
 #include <boost/asio/deadline_timer.hpp>
@@ -93,7 +93,7 @@ namespace shoryu
 			_socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), port));
 			receive_loop();
 			for(int i=0; i < thread_num; i++)
-				_thread_group.create_thread([&] {_io_service.run(); });
+				_thread_group.emplace_back([&] {_io_service.run(); });
 		}
 		//Not thread-safe. Avoid concurrent calls with other methods
 		void stop()
@@ -101,7 +101,10 @@ namespace shoryu
 			_is_running = false;
 			_socket.close();
 			_io_service.stop();
-			_thread_group.join_all();
+			for (auto& thread: _thread_group)
+				if (thread.joinable())
+					thread.join();
+			_thread_group.clear();
 			_io_service.reset();
 			_peers.clear();
 		}
@@ -323,7 +326,7 @@ namespace shoryu
 		volatile bool _is_running;
 
 		boost::asio::ip::udp::socket _socket;
-		boost::thread_group _thread_group;
+		std::vector<std::thread> _thread_group;
 
 		peer_map_type _peers;
 

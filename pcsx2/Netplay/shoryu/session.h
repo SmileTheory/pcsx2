@@ -94,7 +94,16 @@ namespace shoryu
 				a << peers_needed << peers_count;
 				break;
 			case MessageType::Frame:
-				a << frame_id;
+				// 24 bits gives us 16777216 frames
+				// assuming each frame is 1/60th of a second
+				// 24 bits is enough for a little over 3 days of session time
+				uint8_t framePart;
+				framePart = frame_id & 0xFF;
+				a << framePart;
+				framePart = (frame_id >> 8) & 0xFF;
+				a << framePart;
+				framePart = (frame_id >> 16) & 0xFF;
+				a << framePart;
 				frame.serialize(a);
 				break;
 			case MessageType::Info:
@@ -148,7 +157,16 @@ namespace shoryu
 				a >> peers_needed >> peers_count;
 				break;
 			case MessageType::Frame:
-				a >> frame_id;
+				// 24 bits gives us 16777216 frames
+				// assuming each frame is 1/60th of a second
+				// 24 bits is enough for a little over 3 days of session time
+				uint8_t framePart;
+				a >> framePart;
+				frame_id = framePart;
+				a >> framePart;
+				frame_id |= framePart << 8;
+				a >> framePart;
+				frame_id |= framePart << 16;
 				frame.deserialize(a);
 				break;
 			case MessageType::Info:

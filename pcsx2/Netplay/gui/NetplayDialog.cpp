@@ -39,10 +39,6 @@ void NetplayDialog::SetReadonly(bool readonly)
 	if(m_content)
 		m_content->Enable(!readonly);
 }
-void NetplayDialog::EnableOK(bool enable)
-{
-	this->m_dialogButtonSizer->GetAffirmativeButton()->Enable(enable);
-}
 void NetplayDialog::EnableCancel(bool enable)
 {
 	this->m_dialogButtonSizer->GetCancelButton()->Enable(enable);
@@ -50,6 +46,8 @@ void NetplayDialog::EnableCancel(bool enable)
 void NetplayDialog::SetOKHandler(const event_handler_type& handler)
 {
 	m_ok_handler = handler;
+	m_settingsPanel.SetOKHandler(handler);
+	m_lobbyPanel.SetStartHandler(handler);
 }
 void NetplayDialog::SetCloseEventHandler(const event_handler_type& handler)
 {

@@ -33,11 +33,17 @@ public:
 		_dialog = INetplayDialog::GetInstance();
 		_is_stopped = false;
 		_ready_to_print_error_check = [&]() { return !_is_initialized; };
-		NetplaySettings& settings = g_Conf->Net;
+		NetplaySettings& settings = g_Conf->Netplay;
 		if( settings.HostPort <= 0 || settings.HostPort > 65535 )
 		{
 			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid port: %u."), settings.HostPort), _ready_to_print_error_check);
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid host port: %u."), settings.HostPort), _ready_to_print_error_check);
+			return;
+		}
+		if (settings.ListenPort <= 0 || settings.ListenPort > 65535)
+		{
+			Stop();
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid listen port: %u."), settings.ListenPort), _ready_to_print_error_check);
 			return;
 		}
 		if( settings.Mode == ConnectMode && settings.HostAddress.Len() == 0 )
@@ -63,21 +69,21 @@ public:
 #endif
 
 		// 0 picks a random port
-		int localPort = (settings.Mode == HostMode) ? settings.HostPort : 0;
+		int localPort = (settings.Mode == HostMode) ? settings.ListenPort : 0;
 
 		if(_session->bind(localPort))
 		{
 			_state = SSNone;
 			_session->username(std::string((const char*)settings.Username.mb_str(wxConvUTF8)));
 
-			if(g_Conf->Net.SaveReplay)
+			if(g_Conf->Netplay.SaveReplay)
 			{
 				_replay.reset(new Replay());
 				_replay->Mode(Recording);
 			}
 			_game_name.clear();
 			std::function<bool()> connection_func;
-			if(settings.Mode == ConnectMode)
+			if(settings.Mode == ConnectMode || settings.Mode == ObserveMode)
 				connection_func = [this, settings]() { return Connect(settings.HostAddress,settings.HostPort, 0); };
 			else
 				connection_func = [this]() { return Host(0); };
@@ -314,7 +320,7 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
-			if(!_session || !_session->create(g_Conf->Net.NumPlayers, *state,
+			if(!_session || !_session->create(g_Conf->Netplay.NumPlayers, *state,
 				[&](const EmulatorSyncState& s1, const EmulatorSyncState& s2) -> bool
 				{return CheckSyncStates(s1, s2);}))
 				return false;

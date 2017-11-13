@@ -16,6 +16,7 @@ struct NetplaySettings
 	NetplayMode Mode;
 	uint HostPort;
 	wxString HostAddress;
+	uint ListenPort;
 	bool SaveReplay;
 	bool ReadonlyMemcard;
 	uint NumPlayers;

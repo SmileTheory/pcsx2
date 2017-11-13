@@ -19,7 +19,6 @@ public:
 	const NetplaySettings& GetSettings();
 	void SetStatus(const wxString& status);
 	void SetReadonly(bool readonly = true);
-	void EnableOK(bool enable = true);
 	void EnableCancel(bool enable = true);
 	void SetOKHandler(const event_handler_type& handler);
 	void SetCloseEventHandler(const event_handler_type& handler);
@@ -29,8 +28,8 @@ public:
 	void OnClose( wxCloseEvent& event );
 	wxPanel* GetContent();
 protected:
-	void OnCancelButtonClick( wxCommandEvent& event );
-	void OnOKButtonClick( wxCommandEvent& event );
+	virtual void OnCancelButtonClick( wxCommandEvent& event );
+	virtual void OnOKButtonClick( wxCommandEvent& event );
 
 	NetplaySettingsPanel m_settingsPanel;
 	NetplayLobbyPanel m_lobbyPanel;

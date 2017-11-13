@@ -46,7 +46,6 @@ public:
 	{
 		auto ok_hdl = [&]() {
 			m_dialog->GetContent()->Disable();
-			m_dialog->EnableOK(false);
 			_operation_success = true;
 			if(_phase == Settings)
 			{
@@ -130,7 +129,6 @@ public:
 		Utilities::ExecuteOnMainThread([&]() {
 			if(!m_dialog)
 				return;
-			m_dialog->EnableOK(true);
 			NetplayLobbyPanel& p = m_dialog->GetLobbyPanel();
 			p.SetInputDelay(input_delay);
 			p.SetReadOnly(GetSettings().Mode != HostMode);

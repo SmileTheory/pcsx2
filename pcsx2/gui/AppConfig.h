@@ -336,7 +336,7 @@ public:
 	GSWindowOptions			GSWindow;
 	FramerateOptions		Framerate;
 	UiTemplateOptions		Templates;
-	NetplaySettings			Net;
+	NetplaySettings			Netplay;
 	ReplaySettings			Replay;
 	
 	// PCSX2-core emulation options, which are passed to the emu core prior to initiating

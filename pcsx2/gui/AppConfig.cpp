@@ -693,7 +693,8 @@ void AppConfig::LoadSave( IniInterface& ini )
 	GSWindow		.LoadSave( ini );
 	Framerate		.LoadSave( ini );
 	Templates		.LoadSave( ini );
-	Net				.LoadSave( ini );
+	Netplay			.LoadSave( ini );
+	//Replay			.LoadSave( ini );
 
 	ini.Flush();
 }

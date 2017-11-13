@@ -1332,7 +1332,7 @@ void SysCorePlugins::Open()
 {
 	Init();
 
-	if(g_Conf->Net.IsEnabled && !INetplayPlugin::GetInstance().IsInit())
+	if(g_Conf->Netplay.IsEnabled && !INetplayPlugin::GetInstance().IsInit())
 	{
 		INetplayDialog* dialog = INetplayDialog::GetInstance();
 		Utilities::ExecuteOnMainThread([&]() {
@@ -1393,7 +1393,7 @@ void SysCorePlugins::Open()
 		DbgCon.Indent().WriteLn( "Opening Replay" );
 		IReplayPlugin::GetInstance().Open();
 	}
-	else if(g_Conf->Net.IsEnabled)
+	else if(g_Conf->Netplay.IsEnabled)
 	{
 		HookIOP(&INetplayPlugin::GetInstance());
 		DbgCon.Indent().WriteLn( "Opening Netplay" );
@@ -1498,12 +1498,12 @@ void SysCorePlugins::Close()
 
 	UnhookIOP();
 
-	if(g_Conf->Net.IsEnabled) 
+	if(g_Conf->Netplay.IsEnabled) 
 	{
 		DbgCon.Indent().WriteLn( "Closing Netplay");
 		ScopedLock lock( m_mtx_PluginStatus );
 		INetplayPlugin::GetInstance().Close();
-		g_Conf->Net.IsEnabled = false;
+		g_Conf->Netplay.IsEnabled = false;
 	}
 	
 	if(g_Conf->Replay.IsEnabled) 
@@ -1566,7 +1566,7 @@ bool SysCorePlugins::Init()
 
 	Console.WriteLn( Color_StrongBlue, "Initializing plugins..." );
 
-	if(g_Conf->Net.IsEnabled)
+	if(g_Conf->Netplay.IsEnabled)
 	{
 		Console.Indent().WriteLn( "Init Net" );
 		INetplayPlugin::GetInstance().Init();

@@ -407,9 +407,20 @@ namespace shoryu
 			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
-			_frame_table[_side][_frame+_delay] = frame;
+
+			int64_t destFrame = _frame;
+
+			// delay server by only one frame
+#ifndef NETPLAY_DELAY_SERVER
+			if (_side == 0)
+				destFrame += 1;
+			else
+#endif
+				destFrame += _delay;
+
+			_frame_table[_side][destFrame] = frame;
 			message_type msg(MessageType::Frame);
-			msg.frame_id = _frame+_delay;
+			msg.frame_id = destFrame;
 			msg.frame = frame;
 			msg.side = _side;
 			queue_message(msg);

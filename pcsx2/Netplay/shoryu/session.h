@@ -1,4 +1,5 @@
 #pragma once
+#include <iomanip>
 #include "async_transport.h"
 
 #define SHORYU_ENABLE_LOG
@@ -473,19 +474,25 @@ namespace shoryu
 					return true;
 			};
 
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << std::setw(20) << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
+#endif
 			if(timeout > 0)
 			{
 				if (!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
 				{
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << std::setw(20) << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
+			log << "[" << std::setw(20) << time_ms() << "] Waiting timeout!\n";
 #endif
-
 					return false;
 				}
 			}
 			else
 				_frame_cond.wait(lock, pred);
+
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << std::setw(20) << time_ms() << "] Waiting success!\n";
+#endif
 
 			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");

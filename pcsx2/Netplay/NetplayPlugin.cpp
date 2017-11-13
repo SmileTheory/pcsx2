@@ -563,8 +563,15 @@ public:
 		auto timeout = shoryu::time_ms() + 10000;
 		try
 		{
-			while(!_session->get(side, frame, _session->delay()*17))
+			while(true)
 			{
+				auto until_timeout = timeout - shoryu::time_ms();
+				if (until_timeout < 1)
+					until_timeout = 1;
+
+				if (_session->get(side, frame, until_timeout))
+					break;
+
 				_session->send();
 				if(_session->end_session_request())
 					break;

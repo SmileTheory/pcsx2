@@ -98,7 +98,7 @@ namespace shoryu
 					}
 				}
 			}
-			foreach(MsgType& data, data_list)
+			for (auto& data : data_list)
 				yield(data);
 		}
 
@@ -127,12 +127,12 @@ namespace shoryu
 
 			std::vector<msg_wrapper*> msg_shuffle;
 			msg_shuffle.reserve(size);
-			foreach(msg_wrapper& msg, msg_queue)
+			for (auto& msg : msg_queue)
 				msg_shuffle.push_back(&msg);
 			
 			std::random_shuffle(msg_shuffle.begin(), msg_shuffle.end());
 
-			foreach(msg_wrapper* msg, msg_shuffle)
+			for (auto& msg : msg_shuffle)
 			{
 				try
 				{

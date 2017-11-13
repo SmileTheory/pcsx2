@@ -332,7 +332,7 @@ namespace shoryu
 			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
-			foreach(auto ep, _eps)
+			for (auto &ep : _eps)
 				_async.clear_queue(ep);
 		}
 
@@ -653,7 +653,7 @@ namespace shoryu
 		void connection_established()
 		{
 #ifdef SHORYU_ENABLE_LOG
-			foreach(endpoint& ep, _eps)
+			for (endpoint& ep : _eps)
 			{
 				std::string s = ep.address().to_string();
 				s += ":" + std::to_string(ep.port());
@@ -761,7 +761,7 @@ namespace shoryu
 				
 				std::vector<endpoint> ready_list;
 				ready_list.push_back(msg.host_ep);
-				foreach(auto kv, _states)
+				for (auto &kv : _states)
 				{
 					if((time_ms() - kv.second.time < 1000) && kv.second.state == MessageType::Join)
 						ready_list.push_back(kv.first);
@@ -826,7 +826,7 @@ namespace shoryu
 				_states[ep] = pi;
 				int ready = 0;
 				int d = 0;
-				foreach(auto kv, _states)
+				for (auto& kv : _states)
 				{
 					if(kv.second.state == MessageType::Delay)
 					{
@@ -891,7 +891,7 @@ namespace shoryu
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() << "] Out.Ping ";
 #endif
-				foreach(endpoint& ep, _eps)
+				for (auto& ep : _eps)
 				{
 					_async.queue(ep, message_type(MessageType::Ping));
 					send(ep);
@@ -900,7 +900,7 @@ namespace shoryu
 			}
 
 			int rtt = 0;
-			foreach(auto ep, _eps)
+			for (auto& ep : _eps)
 			{
 				auto peer = _async.peer(ep);
 				if(rtt < peer.rtt_avg)

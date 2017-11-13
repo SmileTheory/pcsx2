@@ -6,12 +6,7 @@
 #include <thread>
 
 #include <boost/asio/ip/udp.hpp>
-#include <boost/asio/placeholders.hpp>
-#include <boost/foreach.hpp>
-#include <boost/function.hpp>
 #include <boost/asio/deadline_timer.hpp>
-#define foreach         BOOST_FOREACH
-#define reverse_foreach BOOST_REVERSE_FOREACH
 
 #include "boost_extensions.h"
 #include "tools.h"
@@ -25,15 +20,13 @@
 
 namespace shoryu
 {
-	
-	boost::asio::io_service _io_service;
+	std::unique_ptr<boost::asio::io_service> g_io_service;
 	void prepare_io_service()
 	{
-		_io_service.~io_service();
-		new( &_io_service ) boost::asio::io_service;
+		g_io_service.reset(new boost::asio::io_service());
 	}
 
-	enum OperationType
+	enum class OperationType
 	{
 		Send,
 		Recv
@@ -51,18 +44,18 @@ namespace shoryu
 		class transaction_buffer
 		{
 		public:
-			transaction_buffer() : _next_buffer(0) {}
+			transaction_buffer() : m_next_buffer(0) {}
 			std::array<transaction_data<Operation,BufferSize>, BufferQueueSize> buffer;
 			transaction_data<Operation,BufferSize>& next()
 			{
-				std::unique_lock<std::mutex> lock(_mutex);
-				uint32_t i = _next_buffer;
-				_next_buffer = ++_next_buffer % BufferQueueSize;
+				std::unique_lock<std::mutex> lock(m_mutex);
+				uint32_t i = m_next_buffer;
+				m_next_buffer = ++m_next_buffer % BufferQueueSize;
 				return buffer[i];
 			}
-		private:
-			volatile uint32_t _next_buffer;
-			std::mutex _mutex;
+		protected:
+			volatile uint32_t m_next_buffer;
+			std::mutex m_mutex;
 		};
 
 	template<class DataType, int BufferQueueSize = 256, int BufferSize = 1024>
@@ -75,10 +68,8 @@ namespace shoryu
 		typedef std::list<const peer_data_type > peer_list_type;
 		typedef std::function<void(const error_code&)> error_handler_type;
 		typedef std::function<void(const endpoint&, DataType&)> receive_handler_type;
-		typedef std::mutex mutex_type;
-		typedef std::unique_lock<mutex_type> lock_type;
 		
-		async_transport() : _socket(_io_service), _is_running(false)
+		async_transport() : m_socket(*g_io_service), m_is_running(false)
 		{
 		}
 		virtual ~async_transport()
@@ -88,90 +79,90 @@ namespace shoryu
 		//Not thread-safe. Avoid concurrent calls with other methods
 		void start(unsigned short port, int thread_num = 3)
 		{
-			_is_running = true;
-			_socket.open(boost::asio::ip::udp::v4());
-			_socket.bind(boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), port));
+			m_is_running = true;
+			m_socket.open(boost::asio::ip::udp::v4());
+			m_socket.bind(endpoint(boost::asio::ip::address_v4::any(), port));
 			receive_loop();
 			for(int i=0; i < thread_num; i++)
-				_thread_group.emplace_back([&] {_io_service.run(); });
+				m_thread_group.emplace_back([&] {g_io_service->run(); });
 		}
 		//Not thread-safe. Avoid concurrent calls with other methods
 		void stop()
 		{
-			_is_running = false;
-			_socket.close();
-			_io_service.stop();
-			for (auto& thread: _thread_group)
+			m_is_running = false;
+			m_socket.close();
+			g_io_service->stop();
+			for (auto& thread : m_thread_group)
 				if (thread.joinable())
 					thread.join();
-			_thread_group.clear();
-			_io_service.reset();
-			_peers.clear();
+			m_thread_group.clear();
+			g_io_service->reset();
+			m_peers.clear();
 		}
 
 		error_handler_type& error_handler()
 		{
-			return _err_handler;
+			return m_err_handler;
 		}
 		void error_handler(const error_handler_type& f)
 		{
-			_err_handler = f;
+			m_err_handler = f;
 		}
 		receive_handler_type& receive_handler()
 		{
-			return _recv_handler;
+			return m_recv_handler;
 		}
 		void receive_handler(const receive_handler_type& f)
 		{
-			_recv_handler = f;
+			m_recv_handler = f;
 		}
-		void clear_queue(const boost::asio::ip::udp::endpoint& ep)
+		void clear_queue(const endpoint& ep)
 		{
-			if(_is_running)
+			if(m_is_running)
 				clear_queue_impl(ep);
 		}
-		void queue(const boost::asio::ip::udp::endpoint& ep, const DataType& data)
+		void queue(const endpoint& ep, const DataType& data)
 		{
-			if(_is_running)
+			if(m_is_running)
 				queue_impl(ep, data);
 		}
-		int send(const boost::asio::ip::udp::endpoint& ep, int delay_ms, int loss_percentage)
+		int send(const endpoint& ep, int delay_ms, int loss_percentage)
 		{
-			if(_is_running)
+			if(m_is_running)
 				return send_impl(ep, delay_ms, loss_percentage);
 			return -1;
 		}
-		int send(const boost::asio::ip::udp::endpoint& ep)
+		int send(const endpoint& ep)
 		{
-			if(_is_running)
+			if(m_is_running)
 				return send_impl(ep);
 			return -1;
 		}
-		int send_sync(const boost::asio::ip::udp::endpoint& ep)
+		int send_sync(const endpoint& ep)
 		{
-			if(_is_running)
+			if(m_is_running)
 				return send_impl(ep, true);
 			return -1;
 		}
 		inline const peer_list_type peers()
 		{
 			peer_list_type list;
-			foreach(peer_map_type::value_type& kv, _peers)
+			for (auto& kv : m_peers)
 				list.push_back(kv.second->data);
 			return list;
 		}
 		inline const peer_data_type& peer(const endpoint& ep)
 		{
-			return _peers[ep]->data;
+			return m_peers[ep]->data;
 		}
 		inline int port()
 		{
-			return _socket.local_endpoint().port();
+			return m_socket.local_endpoint().port();
 		}
-	private:
-		inline int send_impl(const boost::asio::ip::udp::endpoint& ep, bool sync = false)
+	protected:
+		inline int send_impl(const endpoint& ep, bool sync = false)
 		{
-			transaction_data<Send,BufferSize>& t = _send_buffer.next();
+			transaction_data<OperationType::Send,BufferSize>& t = m_send_buffer.next();
 			t.ep = ep;
 			oarchive oa(t.buffer.data(), t.buffer.data() + t.buffer.size());
 			int send_n = find_peer(ep).serialize_datagram(oa);
@@ -181,20 +172,20 @@ namespace shoryu
 			{
 				try
 				{
-					_socket.send_to(boost::asio::buffer(t.buffer, t.buffer_length), t.ep);
+					m_socket.send_to(boost::asio::buffer(t.buffer, t.buffer_length), t.ep);
 				}
 				catch(const boost::system::system_error& e)
 				{
-					if(_err_handler)
-						_err_handler(e.code());
+					if(m_err_handler)
+						m_err_handler(e.code());
 				}
 			}
 			else
 			{
-				_socket.async_send_to(boost::asio::buffer(t.buffer, t.buffer_length), boost::ref(t.ep),
+				m_socket.async_send_to(boost::asio::buffer(t.buffer, t.buffer_length), t.ep,
 					[&](const boost::system::error_code &error, std::size_t bytes_transferred)
 					{
-						send_handler(boost::ref(t), bytes_transferred, error);
+						send_handler(t, bytes_transferred, error);
 					}
 				);
 			}
@@ -202,12 +193,12 @@ namespace shoryu
 			return send_n;
 		}
 
-		inline int send_impl(const boost::asio::ip::udp::endpoint& ep, int delay_ms, int loss_percentage)
+		inline int send_impl(const endpoint& ep, int delay_ms, int loss_percentage)
 		{
-			std::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(_io_service));
+			std::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(*g_io_service));
 			timer->expires_from_now(boost::posix_time::milliseconds(delay_ms));
 
-			std::shared_ptr<transaction_data<Send,BufferSize>> t(new transaction_data<Send,BufferSize>());
+			std::shared_ptr<transaction_data<OperationType::Send,BufferSize>> t(new transaction_data<OperationType::Send,BufferSize>());
 			t->ep = ep;
 			oarchive oa(t->buffer.data(), t->buffer.data() + t->buffer.size());
 			int send_n = find_peer(ep).serialize_datagram(oa);
@@ -221,7 +212,7 @@ namespace shoryu
 				{
 					if (err != boost::asio::error::operation_aborted)
 					{
-						_socket.async_send_to(boost::asio::buffer(t->buffer, t->buffer_length), boost::ref(t->ep),
+						m_socket.async_send_to(boost::asio::buffer(t->buffer, t->buffer_length), t->ep,
 							[=](const boost::system::error_code& e, size_t bytes_sent) mutable
 							{
 								send_handler(*t, bytes_sent, e);
@@ -238,39 +229,39 @@ namespace shoryu
 			return send_n;
 		}
 
-		inline uint64_t queue_impl(const boost::asio::ip::udp::endpoint& ep, const DataType& data)
+		inline uint64_t queue_impl(const endpoint& ep, const DataType& data)
 		{
 			return find_peer(ep).queue_msg(data);
 		}
-		inline void clear_queue_impl(const boost::asio::ip::udp::endpoint& ep)
+		inline void clear_queue_impl(const endpoint& ep)
 		{
 			find_peer(ep).clear_queue();
 		}
 		
 		inline peer_type& find_peer(const endpoint& ep)
 		{
-			lock_type lock(_mutex);
-			if(_peers.find(ep) == _peers.end())
+			std::unique_lock<std::mutex> lock(m_mutex);
+			if(m_peers.find(ep) == m_peers.end())
 			{
-				_peers[ep].reset(new peer_type());
-				_peers[ep]->data.ep = ep;
+				m_peers[ep].reset(new peer_type());
+				m_peers[ep]->data.ep = ep;
 			}
-			return *_peers[ep];
+			return *m_peers[ep];
 		}
 
 		void receive_loop()
 		{
-			transaction_data<Recv,BufferSize>& t = _recv_buffer.next();
-			_socket.async_receive_from(boost::asio::buffer(t.buffer, BufferSize), boost::ref(t.ep),
+			transaction_data<OperationType::Recv,BufferSize>& t = m_recv_buffer.next();
+			m_socket.async_receive_from(boost::asio::buffer(t.buffer, BufferSize), t.ep,
 				[&](const boost::system::error_code &error, std::size_t bytes_transferred)
 				{
-					receive_handler(boost::ref(t), bytes_transferred, error);
+					receive_handler(t, bytes_transferred, error);
 				}
 			);
 		}
-		void receive_handler( transaction_data<Recv,BufferSize>& t, size_t bytes_recvd, const boost::system::error_code& e)
+		void receive_handler( transaction_data<OperationType::Recv,BufferSize>& t, size_t bytes_recvd, const boost::system::error_code& e)
 		{
-			if(_is_running)
+			if(m_is_running)
 			{
 				receive_loop();
 				if (!e)
@@ -280,27 +271,27 @@ namespace shoryu
 				}
 				else
 				{
-					if(_err_handler)
-						_err_handler(e);
+					if(m_err_handler)
+						m_err_handler(e);
 				}
 			}
 		}
-		void send_handler(const transaction_data<Send,BufferSize>& t, size_t bytes_sent, const boost::system::error_code& e)
+		void send_handler(const transaction_data<OperationType::Send,BufferSize>& t, size_t bytes_sent, const boost::system::error_code& e)
 		{
-			if(_is_running)
+			if(m_is_running)
 			{
 				if(e)
 				{
-					if(_err_handler)
-						_err_handler(e);
+					if(m_err_handler)
+						m_err_handler(e);
 				}
 			}
 		}
-		void finalize(const transaction_data<Send,BufferSize>& transaction)
+		void finalize(const transaction_data<OperationType::Send,BufferSize>& transaction)
 		{
 			//Outgoing transaction finalization is omitted for better performance
 		}
-		void finalize(const transaction_data<Recv,BufferSize>& transaction)
+		void finalize(const transaction_data<OperationType::Recv,BufferSize>& transaction)
 		{
 			iarchive ia(transaction.buffer.data(), transaction.buffer.data() + transaction.buffer_length);
 			peer_type& peer = find_peer(transaction.ep);
@@ -308,31 +299,31 @@ namespace shoryu
 			{
 				peer.deserialize_datagram(ia, [&](DataType& data)
 				{
-					if(_recv_handler)
-						_recv_handler(transaction.ep, data);
+					if(m_recv_handler)
+						m_recv_handler(transaction.ep, data);
 				});
 			}
 			//TODO: Exception handling code
 			catch(std::exception&)
 			{
-				if(_err_handler)
-					_err_handler(error_code());
+				if(m_err_handler)
+					m_err_handler(error_code());
 			}
 		}
 
-		error_handler_type _err_handler;
-		receive_handler_type _recv_handler;
+		error_handler_type m_err_handler;
+		receive_handler_type m_recv_handler;
 
-		volatile bool _is_running;
+		volatile bool m_is_running;
 
-		boost::asio::ip::udp::socket _socket;
-		std::vector<std::thread> _thread_group;
+		boost::asio::ip::udp::socket m_socket;
+		std::vector<std::thread> m_thread_group;
 
-		peer_map_type _peers;
+		peer_map_type m_peers;
 
-		transaction_buffer<Send,BufferSize, BufferQueueSize> _send_buffer;
-		transaction_buffer<Recv,BufferSize, BufferQueueSize> _recv_buffer;
+		transaction_buffer<OperationType::Send,BufferSize, BufferQueueSize> m_send_buffer;
+		transaction_buffer<OperationType::Recv,BufferSize, BufferQueueSize> m_recv_buffer;
 
-		mutex_type _mutex;
+		std::mutex m_mutex;
 	};
 }

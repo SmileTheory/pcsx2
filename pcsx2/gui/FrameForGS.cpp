@@ -348,7 +348,7 @@ void GSPanel::DirectKeyCommand( const KeyAcceleratorCode& kac )
 
 void GSPanel::DirectKeyCommand( wxKeyEvent& evt )
 {
-	if(g_Conf->Net.IsEnabled)
+	if(g_Conf->Netplay.IsEnabled)
 		return;
 	DirectKeyCommand(KeyAcceleratorCode( evt ));
 }

@@ -507,7 +507,7 @@ void MainEmuFrame::_DoBootCdvdWithNetplay()
 
 	INetplayDialog* dialog = INetplayDialog::GetInstance();
 	dialog->Initialize();
-	dialog->SetSettings(g_Conf->Net);
+	dialog->SetSettings(g_Conf->Netplay);
 	dialog->SetStatus(wxT("Please specify connection settings"));
 	dialog->Show();
 	UI_DisableEverything();
@@ -526,11 +526,11 @@ void MainEmuFrame::_DoBootCdvdWithNetplay()
 				dialog->SetStatus(wxT("Connecting..."));
 				break;
 		}
-		g_Conf->Net = dialog->GetSettings();
+		g_Conf->Netplay = dialog->GetSettings();
 		dialog->SetCloseEventHandler([&]() {
 			INetplayPlugin::GetInstance().Interrupt();
 		});
-		g_Conf->Net.IsEnabled = true;
+		g_Conf->Netplay.IsEnabled = true;
 
 		// dialog->OnConnectionStarted();
 

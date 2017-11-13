@@ -603,7 +603,7 @@ void MainEmuFrame::ApplyCoreStatus()
 
 	bool vm = SysHasValidState();
 
-	if (susres && !g_Conf->Net.IsEnabled && !g_Conf->Replay.IsEnabled)
+	if (susres && !g_Conf->Netplay.IsEnabled && !g_Conf->Replay.IsEnabled)
 	{
 		if( !CoreThread.IsClosing() )
 		{

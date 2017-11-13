@@ -508,6 +508,10 @@ namespace shoryu
 			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			f = _frame_table[side][frame];
+
+			// we accessed this frame, so should be safe to delete previous frame
+			_frame_table[side].erase(frame - 1);
+
 			return true;
 		}
 

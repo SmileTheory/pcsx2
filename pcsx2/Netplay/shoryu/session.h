@@ -51,9 +51,9 @@ namespace shoryu
 		typedef std::vector<endpoint> endpoint_container;
 		typedef boost::asio::ip::address_v4 address_type;
 
-		message() {}
+		message() : frame_id(0), side(0) {}
 
-		message(MessageType type) : cmd(type)
+		message(MessageType type) : cmd(type), frame_id(0), side(0)
 		{
 		}
 		MessageType cmd;
@@ -211,6 +211,7 @@ namespace shoryu
 #ifdef SHORYU_ENABLE_LOG
 		//std::stringstream log;
 		std::fstream log;
+		msec log_start;
 #endif
 		session() : 
 			_send_delay_max(0), _send_delay_min(0), _packet_loss(0)
@@ -223,6 +224,7 @@ namespace shoryu
 			filename += ".log";
 
 			log.open(filename, std::ios_base::trunc | std::ios_base::out);
+			log_start = time_ms();
 #endif
 			clear();
 		}
@@ -248,6 +250,7 @@ namespace shoryu
 		{
 			_shutdown = false;
 			try_prepare();
+			m_host = true;
 			_state = state;
 			_state_check_handler = handler;
 			_async.receive_handler([&](const endpoint& ep, message_type& msg){create_recv_handler(ep, msg);});
@@ -255,14 +258,14 @@ namespace shoryu
 			if(create_handler(players, timeout) && _current_state != MessageType::None)
 			{
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Established! ";
+				log << "[" << time_ms() - log_start << "] Established!\n";
 #endif
 				connection_established();
 			}
 			else
 			{
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] NotEstablished! ";
+				log << "[" << time_ms() - log_start << "] NotEstablished!\n";
 #endif
 				connected = false;
 				_current_state = MessageType::None;
@@ -274,6 +277,7 @@ namespace shoryu
 		{
 			_shutdown = false;
 			try_prepare();
+			m_host = false;
 			_state = state;
 			_state_check_handler = handler;
 			_async.receive_handler([&](const endpoint& ep, message_type& msg){join_recv_handler(ep, msg);});
@@ -281,14 +285,14 @@ namespace shoryu
 			if(join_handler(ep, timeout) && _current_state != MessageType::None)
 			{
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Established! ";
+				log << "[" << time_ms() - log_start << "] Established!\n";
 #endif
 				connection_established();
 			}
 			else
 			{
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] NotEstablished! ";
+				log << "[" << time_ms() - log_start << "] NotEstablished!\n";
 #endif
 				connected = false;
 				_current_state = MessageType::None;
@@ -300,11 +304,11 @@ namespace shoryu
 		inline void queue_message(message_type &msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << std::setw(20) << time_ms() << "] ";
+			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
 			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
 			log << " (" << _side << ") --^";
 #endif
-			if (_side != 0)
+			if (!m_host)
 			{
 				_async.queue(_eps[0], msg);
 #ifdef SHORYU_ENABLE_LOG
@@ -412,7 +416,7 @@ namespace shoryu
 
 			// delay server by only one frame
 #ifndef NETPLAY_DELAY_SERVER
-			if (_side == 0)
+			if (m_host)
 				destFrame += 1;
 			else
 #endif
@@ -431,7 +435,7 @@ namespace shoryu
 			int n = 0;
 			for (int i = 0; i < _eps.size(); i++)
 			{
-				if (i == 1 && _side != 0)
+				if (i == 1 && !m_host)
 					break;
 				if (i == _side)
 					continue;
@@ -444,7 +448,7 @@ namespace shoryu
 			int n = 0;
 			for (int i = 0; i < _eps.size(); i++)
 			{
-				if (i == 1 && _side != 0)
+				if (i == 1 && !m_host)
 					break;
 				if (i == _side)
 					continue;
@@ -486,14 +490,14 @@ namespace shoryu
 			};
 
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << std::setw(20) << time_ms() << "] Waiting for frame " << frame << " side " << side << " table size " << _frame_table[side].size() << "\n";
+			log << "[" << std::setw(12) << time_ms() - log_start << "] Waiting for frame " << frame << " side " << side << "\n";
 #endif
 			if(timeout > 0)
 			{
 				if (!_frame_cond.wait_for(lock, std::chrono::milliseconds(timeout), pred))
 				{
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << std::setw(20) << time_ms() << "] Waiting timeout!\n";
+			log << "[" << std::setw(12) << time_ms() - log_start << "] Waiting timeout!\n";
 #endif
 					return false;
 				}
@@ -502,7 +506,7 @@ namespace shoryu
 				_frame_cond.wait(lock, pred);
 
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << std::setw(20) << time_ms() << "] Waiting success!\n";
+			log << "[" << std::setw(12) << time_ms() - log_start << "] Waiting success!\n";
 #endif
 
 			if(_current_state == MessageType::None)
@@ -532,9 +536,6 @@ namespace shoryu
 		}
 		int delay()
 		{
-#ifdef SHORYU_ENABLE_LOG
-			//log << "[" << time_ms() << "] Your delay is " << _delay << "\n";
-#endif
 			return _delay;
 		}
 		void next_frame()
@@ -642,7 +643,7 @@ namespace shoryu
 			_frame = 0;
 			_data_index = 0;
 			_current_state = MessageType::None;
-			//_host = false;
+			m_host = false;
 			_eps.clear();
 			_end_session_request = false;
 			_frame_table.clear();
@@ -650,9 +651,6 @@ namespace shoryu
 			_data_table.clear();
 			_async.error_handler(std::function<void(const error_code&)>());
 			_async.receive_handler(std::function<void(const endpoint&, message_type&)>());
-#ifdef SHORYU_ENABLE_LOG
-			//log.str("");
-#endif
 		}
 		void connection_established()
 		{
@@ -661,7 +659,7 @@ namespace shoryu
 			{
 				std::string s = ep.address().to_string();
 				s += ":" + std::to_string(ep.port());
-				log << "\nep " << s << "\n";
+				log << "ep " << s << "\n";
 			}
 #endif
 			std::unique_lock<std::mutex> lock1(_connection_mutex);
@@ -700,7 +698,7 @@ namespace shoryu
 		bool check_peers_readiness()
 		{
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << time_ms() << "] Out.Ready ";
+			log << "[" << time_ms() - log_start << "] Out.Ready\n";
 #endif
 			return send() == 0;
 		}
@@ -730,28 +728,27 @@ namespace shoryu
 		}
 		void create_recv_handler(const endpoint& ep, message_type& msg)
 		{
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
+			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
+			log << " (" << _side << ") <--";
+			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << "\n";
+#endif
 			std::unique_lock<std::mutex> lock(_connection_mutex);
 
 			if(msg.cmd == MessageType::Join)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Join from " << ep.address().to_string() << ":" << ep.port() << "\n";
-#endif
 				_username_map[ep] = msg.username;
 				if(!_state_check_handler(_state, msg.state))
 				{
 					message_type msg(MessageType::Deny);
 					msg.state = _state;
 					_async.queue(ep, msg);
-					int t = 5;
-					while(t --> 0)
-					{
-						send(ep);
-						sleep(50);
-					}
+					send(ep);
 					_connection_sem.post();
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << time_ms() << "] Out.Deny ";
+					log << "[" << time_ms() - log_start << "] Out.Deny\n";
 #endif
 					return;
 				}
@@ -798,34 +795,27 @@ namespace shoryu
 							msg.side = i;
 							_async.queue(ready_list[i], msg);
 						}
+						send();
 						_current_state = MessageType::Ping;
 						_side = 0;
 					}
-					for(size_t i = 1; i < ready_list.size(); i++)
-						send(ready_list[i]);
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << time_ms() << "] Out.Info ";
+					log << "[" << time_ms() - log_start << "] Out.Info\n";
 #endif
 				}
 			}
 			if(msg.cmd == MessageType::Ping)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Ping ";
-#endif
 				message_type msg;
 				msg.cmd = MessageType::None;
 				_async.queue(ep, msg);
 				send(ep);
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Out.None ";
+				log << "[" << time_ms() - log_start << "] Out.None\n";
 #endif
 			}
 			if(msg.cmd == MessageType::Delay)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Delay ";
-#endif
 				peer_info pi = { MessageType::Delay, 0, msg.delay };
 				_states[ep] = pi;
 				int ready = 0;
@@ -872,14 +862,10 @@ namespace shoryu
 				msg.username = _username;
 				msg.host_ep = host_ep;
 				msg.state = _state;
-				// Commenting this line out causes multiple connect messages to send every 500ms, which is what we want
-				//if(!send(host_ep))
-				{
-					_async.queue(host_ep, msg);
-					send(host_ep);
-				}
+				_async.queue(host_ep, msg);
+				send(host_ep);
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Out.Join ";
+				log << "[" << time_ms() - log_start << "] Out.Join\n";
 #endif
 			}
 			while(!_connection_sem.timed_wait(500));
@@ -887,30 +873,7 @@ namespace shoryu
 			if(_current_state == MessageType::Deny)
 				return false;
 
-			int i = 150;
-			while(i-->0)
-			{
-				if(_shutdown)
-					return false;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Out.Ping ";
-#endif
-				for (auto& ep : _eps)
-				{
-					_async.queue(ep, message_type(MessageType::Ping));
-					send(ep);
-				}
-				shoryu::sleep(50);
-			}
-
 			int rtt = 0;
-			for (auto& ep : _eps)
-			{
-				auto peer = _async.peer(ep);
-				if(rtt < peer.rtt_avg)
-					rtt = peer.rtt_avg;
-			}
-
 			message_type msg(MessageType::Delay);
 			msg.delay = calculate_delay(rtt);
 			_async.queue(host_ep, msg);
@@ -924,7 +887,7 @@ namespace shoryu
 				if(_shutdown)
 					return false;
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] Out.Delay ";
+				log << "[" << time_ms() - log_start << "] Out.Delay\n";
 #endif
 				if(timeout > 0 && (time_ms() - start_time > timeout))
 					return false;
@@ -949,14 +912,18 @@ namespace shoryu
 		}
 		void join_recv_handler(const endpoint& ep, message_type& msg)
 		{
+#ifdef SHORYU_ENABLE_LOG
+			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
+			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
+			log << " (" << _side << ") <--";
+			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << "\n";
+#endif
 			if(ep != _host_ep)
 				return;
 			std::unique_lock<std::mutex> lock(_connection_mutex);
 			if(msg.cmd == MessageType::Info)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Info ";
-#endif
 				_side = msg.side;
 				_eps = msg.eps;
 				for(size_t i = 0; i < _eps.size(); i++)
@@ -972,18 +939,12 @@ namespace shoryu
 			}
 			if(msg.cmd == MessageType::Deny)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Deny ";
-#endif
 				_current_state = MessageType::Deny;
 				_state_check_handler(_state, msg.state);
 				_connection_sem.post();
 			}
 			if(msg.cmd == MessageType::Delay)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Delay ";
-#endif
 				delay(msg.delay);
 				if(_current_state != MessageType::Ready)
 				{
@@ -995,9 +956,6 @@ namespace shoryu
 			}
 			if(msg.cmd == MessageType::Ping)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() << "] In.Ping ";
-#endif
 				message_type msg;
 				msg.cmd = MessageType::None;
 				_async.queue(ep, msg);
@@ -1008,16 +966,15 @@ namespace shoryu
 		void recv_hdl(const endpoint& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
-			log << "[" << std::setw(20) << time_ms() << "] ";
+			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
 			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
 			log << " (" << _side << ") <--";
 			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
 			log << "\n";
 #endif
 
-			// ignore messages from self
-			// FIXME: this shouldn't happen, track down if it does.
-			if (msg.side == _side)
+			// clients ignore messages not from host
+			if (!m_host && ep != _eps[0])
 				return;
 
 			//if(_sides.find(ep) != _sides.end())
@@ -1025,7 +982,7 @@ namespace shoryu
 				int side = msg.side; //_sides[ep];
 
 				// if we're server, echo to everyone else
-				if (_side == 0 && side != 0)
+				if (m_host && side != 0)
 				{
 					for (int i = 1; i < _eps.size(); i++)
 					{
@@ -1056,21 +1013,21 @@ namespace shoryu
 					std::unique_lock<std::mutex> lock(_mutex);
 					_data_table[side][msg.frame_id] = msg.data;
 					_data_cond.notify_all();
-					if (_side == 0 || side == 0)
+					if (m_host || side == 0)
 						send(ep);
 				}
 				if(msg.cmd == MessageType::Delay)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					delay(msg.delay);
-					if (_side == 0 || side == 0)
+					if (m_host || side == 0)
 						send(ep);
 				}
 				if(msg.cmd == MessageType::EndSession)
 				{
 					std::unique_lock<std::mutex> lock(_mutex);
 					_end_session_request = true;
-					if (_side == 0 || side == 0)
+					if (m_host || side == 0)
 						send(ep);
 				}
 			}
@@ -1084,6 +1041,7 @@ namespace shoryu
 		volatile int _delay;
 		int64_t _frame;
 		int64_t _data_index;
+		bool m_host;
 		int _side;
 		int _packet_loss;
 		int _send_delay_max;

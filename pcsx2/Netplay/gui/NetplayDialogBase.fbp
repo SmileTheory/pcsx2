@@ -26,7 +26,7 @@
         <property name="ui_table">UI</property>
         <property name="use_enum">0</property>
         <property name="use_microsoft_bom">0</property>
-        <object class="Dialog" expanded="1">
+        <object class="Frame" expanded="1">
             <property name="aui_managed">0</property>
             <property name="aui_manager_style">wxAUI_MGR_DEFAULT</property>
             <property name="bg"></property>
@@ -45,13 +45,14 @@
             <property name="name">NetplayDialogBase</property>
             <property name="pos"></property>
             <property name="size">250,-1</property>
-            <property name="style">wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU</property>
-            <property name="subclass"></property>
+            <property name="style">wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU</property>
+            <property name="subclass">; ; Not forward_declare</property>
             <property name="title">Netplay - PCSX2</property>
             <property name="tooltip"></property>
             <property name="window_extra_style"></property>
             <property name="window_name"></property>
             <property name="window_style"></property>
+            <property name="xrc_skip_sizer">1</property>
             <event name="OnActivate"></event>
             <event name="OnActivateApp"></event>
             <event name="OnAuiFindManager"></event>
@@ -67,7 +68,6 @@
             <event name="OnHibernate"></event>
             <event name="OnIconize"></event>
             <event name="OnIdle"></event>
-            <event name="OnInitDialog"></event>
             <event name="OnKeyDown"></event>
             <event name="OnKeyUp"></event>
             <event name="OnKillFocus"></event>

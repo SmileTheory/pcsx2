@@ -1,8 +1,10 @@
 #pragma once
 #include <iomanip>
+#include <map>
 #include "async_transport.h"
+#include "zed_net.h"
 
-#define SHORYU_ENABLE_LOG
+//#define SHORYU_ENABLE_LOG
 
 namespace shoryu
 {
@@ -18,7 +20,6 @@ namespace shoryu
 		Join,
 		Deny,
 		Info, //side, all endpoints, delay
-		Wait,
 		Delay, //set delay
 		Ready, //send to eps, after all eps answered - start the game
 		EndSession
@@ -32,7 +33,6 @@ namespace shoryu
 		"Join  ",
 		"Deny  ",
 		"Info  ",
-		"Wait  ",
 		"Delay ",
 		"Ready ",
 		"EndSn "
@@ -41,15 +41,14 @@ namespace shoryu
 
 	struct message_data
 	{
-		boost::shared_ptr<char[]> p;
+		std::shared_ptr<char> p;
 		uint32_t data_length;
 	};
 
 	template<typename T, typename StateType>
 	struct message
 	{
-		typedef std::vector<endpoint> endpoint_container;
-		typedef boost::asio::ip::address_v4 address_type;
+		typedef std::vector<zed_net_address_t> endpoint_container;
 
 		message() : frame_id(0), side(0) {}
 
@@ -59,14 +58,12 @@ namespace shoryu
 		MessageType cmd;
 		StateType state;
 		int64_t frame_id;
-		std::vector<endpoint> eps;
 		std::vector<std::string> usernames;
-		endpoint host_ep;
+		zed_net_address_t host_ep;
 		uint32_t rand_seed;
 		uint8_t delay;
 		uint8_t side;
-		uint8_t peers_needed;
-		uint8_t peers_count;
+		uint8_t num_players;
 		T frame;
 		message_data data;
 		std::string username;
@@ -79,7 +76,7 @@ namespace shoryu
 			switch(cmd)
 			{
 			case MessageType::Join:
-				a << state << host_ep.address().to_v4().to_ulong() << host_ep.port();
+				a << state << host_ep.host << host_ep.port;
 				length = username.length();
 				a << length;
 				if(length)
@@ -90,9 +87,6 @@ namespace shoryu
 				a.write(data.p.get(), data.data_length);
 			case MessageType::Deny:
 				a << state;
-				break;
-			case MessageType::Wait:
-				a << peers_needed << peers_count;
 				break;
 			case MessageType::Frame:
 				// 24 bits gives us 16777216 frames
@@ -108,10 +102,9 @@ namespace shoryu
 				frame.serialize(a);
 				break;
 			case MessageType::Info:
-				a << rand_seed << side << eps.size();
-				for(size_t i = 0; i < eps.size(); i++)
+				a << rand_seed << side << num_players;
+				for(size_t i = 0; i < num_players; i++)
 				{
-					a << eps[i].address().to_v4().to_ulong() << eps[i].port();
 					length = usernames[i].length();
 					a << length;
 					if(length)
@@ -129,7 +122,7 @@ namespace shoryu
 		{
 			uint8_t cmdSide;
 			a >> cmdSide;
-			cmd = (shoryu::MessageType)(cmdSide & 0x1F);
+			cmd = (MessageType)(cmdSide & 0x1F);
 			side = cmdSide >> 5;
 			unsigned long addr;
 			unsigned short port;
@@ -137,7 +130,8 @@ namespace shoryu
 			{
 			case MessageType::Join:
 				a >> state >> addr >> port;
-				host_ep = endpoint(address_type(addr), port);
+				host_ep.host = addr;
+				host_ep.port = port;
 				size_t length;
 				a >> length;
 				if(length > 0)
@@ -149,13 +143,10 @@ namespace shoryu
 				break;
 			case MessageType::Data:
 				a >> frame_id >> data.data_length;
-				data.p.reset(new char[data.data_length]);
+				data.p.reset(new char[data.data_length], std::default_delete<char[]>());
 				a.read(data.p.get(), data.data_length);
 			case MessageType::Deny:
 				a >> state;
-				break;
-			case MessageType::Wait:
-				a >> peers_needed >> peers_count;
 				break;
 			case MessageType::Frame:
 				// 24 bits gives us 16777216 frames
@@ -171,12 +162,9 @@ namespace shoryu
 				frame.deserialize(a);
 				break;
 			case MessageType::Info:
-				endpoint_container::size_type size;
-				a >> rand_seed >> side >> size;
-				repeat(size)
+				a >> rand_seed >> side >> num_players;
+				repeat(num_players)
 				{
-					a >> addr >> port;
-					eps.push_back(endpoint(address_type(addr), port));
 					size_t length;
 					a >> length;
 					if(length > 0)
@@ -199,17 +187,16 @@ namespace shoryu
 	};
 
 	template<typename FrameType, typename StateType>
-	class session : boost::noncopyable
+	class session : std::noncopyable
 	{
 		typedef message<FrameType, StateType> message_type;
-		typedef std::vector<endpoint> endpoint_container;
+		typedef std::vector<zed_net_address_t> endpoint_container;
 		typedef std::unordered_map<int64_t, FrameType> frame_map;
 		typedef std::vector<frame_map> frame_table;
 		typedef std::function<bool(const StateType&, const StateType&)> state_check_handler_type;
 		typedef std::vector<std::unordered_map<int64_t, message_data>> data_table;
 	public:
 #ifdef SHORYU_ENABLE_LOG
-		//std::stringstream log;
 		std::fstream log;
 		msec log_start;
 #endif
@@ -231,14 +218,7 @@ namespace shoryu
 
 		bool bind(int port)
 		{
-			try
-			{
-				_async.start(port, 2);
-			}
-			catch(boost::system::system_error&)
-			{
-				return false;
-			}
+			_async.start(port, 2);
 			return true;
 		}
 		void unbind()
@@ -246,58 +226,108 @@ namespace shoryu
 			_async.stop();
 		}
 
+		bool wait_for_start()
+		{
+			if (m_host)
+			{
+				auto pred = [&]() -> bool {
+					if (_current_state != MessageType::Ready)
+						return true;
+
+					for (auto &ep : m_clientEndpoints)
+					{
+						if (std::find(m_ready_list.begin(), m_ready_list.end(), ep) == m_ready_list.end())
+						{
+#ifdef SHORYU_ENABLE_LOG
+							log << "[" << time_ms() - log_start << "] " << zed_net_host_to_str(ep.host) << ":" << ep.port << " is not ready\n";
+#endif
+							return false;
+						}
+					}
+					return true;
+				};
+
+				std::unique_lock<std::mutex> lock(_connection_mutex);
+				while (!pred())
+					_connection_cv.wait_for(lock, std::chrono::seconds(1), pred);
+			}
+			else
+			{
+				auto pred = [&]() -> bool {
+					if (_current_state != MessageType::Ready)
+						return true;
+
+					if (!m_ready)
+					{
+#ifdef SHORYU_ENABLE_LOG
+						log << "[" << time_ms() - log_start << "] I am not ready!\n";
+#endif
+						return false;
+					}
+					return true;
+				};
+
+				std::unique_lock<std::mutex> lock(_connection_mutex);
+				while (!pred())
+					_connection_cv.wait_for(lock, std::chrono::seconds(1), pred);
+			}
+
+			if (_current_state != MessageType::Ready)
+				return false;
+
+			while (send())
+				std::this_thread::sleep_for(std::chrono::milliseconds(17));
+
+			connection_established();
+
+			return true;
+		}
+
 		bool create(int players, const StateType& state, const state_check_handler_type& handler, int timeout = 0)
 		{
 			_shutdown = false;
 			try_prepare();
 			m_host = true;
+			m_num_players = 1;
 			_state = state;
 			_state_check_handler = handler;
-			_async.receive_handler([&](const endpoint& ep, message_type& msg){create_recv_handler(ep, msg);});
+			_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){create_recv_handler(ep, msg);});
 			bool connected = true;
-			if(create_handler(players, timeout) && _current_state != MessageType::None)
+			create_handler();
+
+			if(create_handler() && _current_state != MessageType::None)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] Established!\n";
-#endif
-				connection_established();
+				//connection_established();
 			}
 			else
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] NotEstablished!\n";
-#endif
 				connected = false;
 				_current_state = MessageType::None;
-				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
+				_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
+
 			return connected;
 		}
-		bool join(endpoint ep, const StateType& state, const state_check_handler_type& handler, int timeout = 0)
+		bool join(zed_net_address_t ep, const StateType& state, const state_check_handler_type& handler, int timeout = 0)
 		{
 			_shutdown = false;
 			try_prepare();
 			m_host = false;
 			_state = state;
 			_state_check_handler = handler;
-			_async.receive_handler([&](const endpoint& ep, message_type& msg){join_recv_handler(ep, msg);});
+			_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){join_recv_handler(ep, msg);});
 			bool connected = true;
 			if(join_handler(ep, timeout) && _current_state != MessageType::None)
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] Established!\n";
-#endif
-				connection_established();
+				//connection_established();
 			}
 			else
 			{
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] NotEstablished!\n";
-#endif
 				connected = false;
 				_current_state = MessageType::None;
-				_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
+				_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){recv_hdl(ep, msg);});
 			}
+
 			return connected;
 		}
 
@@ -310,19 +340,19 @@ namespace shoryu
 #endif
 			if (!m_host)
 			{
-				_async.queue(_eps[0], msg);
+				_async.queue(_host_ep, msg);
 #ifdef SHORYU_ENABLE_LOG
-				log << " (0) " << _eps[0].address().to_string() << ":" << (int)_eps[0].port();
+				log << " (0) " << zed_net_host_to_str(_host_ep.host) << ":" << (int)_host_ep.port;
 #endif
 			}
 			else
 			{
-				for (int i = 1; i < _eps.size(); i++)
+				for (int i = 0; i < m_clientEndpoints.size(); i++)
 				{
+					_async.queue(m_clientEndpoints[i], msg);
 #ifdef SHORYU_ENABLE_LOG
-				log << " (" << i << ") " << _eps[i].address().to_string() << ":" << (int)_eps[i].port();
+				log << " (" << i << ") " << zed_net_host_to_str(m_clientEndpoints[i].host) << ":" << (int)m_clientEndpoints[i].port;
 #endif
-					_async.queue(_eps[i], msg);
 				}
 			}
 
@@ -336,8 +366,15 @@ namespace shoryu
 			if(_current_state == MessageType::None)
 				throw std::exception("invalid state");
 			std::unique_lock<std::mutex> lock(_mutex);
-			for (auto &ep : _eps)
-				_async.clear_queue(ep);
+			if (!m_host)
+			{
+				_async.clear_queue(_host_ep);
+			}
+			else
+			{
+				for (auto &ep : m_clientEndpoints)
+					_async.clear_queue(ep);
+			}
 		}
 
 		inline void send_end_session_request()
@@ -392,7 +429,7 @@ namespace shoryu
 			};
 			if(timeout > 0)
 			{
-				if(!_data_cond.timed_wait(lock, boost::posix_time::millisec(timeout), pred))
+				if(!_data_cond.timed_wait(lock, std::chrono::milliseconds(timeout), pred))
 					return false;
 			}
 			else
@@ -433,35 +470,37 @@ namespace shoryu
 		inline int send()
 		{
 			int n = 0;
-			for (int i = 0; i < _eps.size(); i++)
+			if (!m_host)
 			{
-				if (i == 1 && !m_host)
-					break;
-				if (i == _side)
-					continue;
-				n += send(_eps[i]);
+				n += send(_host_ep);
+			}
+			else
+			{
+				for (auto &ep : m_clientEndpoints)
+					n += send(ep);
 			}
 			return n;
 		}
 		inline int send_sync()
 		{
 			int n = 0;
-			for (int i = 0; i < _eps.size(); i++)
+			if (!m_host)
 			{
-				if (i == 1 && !m_host)
-					break;
-				if (i == _side)
-					continue;
-				n += send_sync(_eps[i]);
+				n += send_sync(_host_ep);
+			}
+			else
+			{
+				for (auto &ep : m_clientEndpoints)
+					n += send_sync(ep);
 			}
 			return n;
 		}
-		inline int send_sync(const endpoint& ep)
+		inline int send_sync(const zed_net_address_t& ep)
 		{
 			return _async.send_sync(ep);
 		}
 
-		inline int send(const endpoint& ep)
+		inline int send(const zed_net_address_t& ep)
 		{
 			if(_packet_loss == 0 && _send_delay_max == 0)
 				return _async.send(ep);
@@ -560,7 +599,7 @@ namespace shoryu
 			_shutdown = true;
 			clear();
 			_frame_cond.notify_all();
-			_connection_sem.post();
+			_connection_cv.notify_all();
 		}
 		int port()
 		{
@@ -570,9 +609,9 @@ namespace shoryu
 		{
 			return _current_state;
 		}
-		endpoint_container endpoints()
+		int num_players()
 		{
-			return _eps;
+			return m_num_players;
 		}
 		int64_t first_received_frame()
 		{
@@ -616,7 +655,7 @@ namespace shoryu
 			std::unique_lock<std::mutex> lock(_error_mutex);
 			_last_error = err;
 		}
-		const std::string& username(const endpoint& ep)
+		const std::string& username(const zed_net_address_t& ep)
 		{
 			return _username_map[ep];
 		}
@@ -636,7 +675,8 @@ namespace shoryu
 		void clear()
 		{
 			_username_map.clear();
-			_connection_sem.clear();
+			m_ready_list.clear();
+			m_ready = false;
 			_last_received_frame = -1;
 			_first_received_frame = -1;
 			_delay = _side = /*_players =*/ 0;
@@ -644,30 +684,31 @@ namespace shoryu
 			_data_index = 0;
 			_current_state = MessageType::None;
 			m_host = false;
-			_eps.clear();
+			m_clientEndpoints.clear();
 			_end_session_request = false;
 			_frame_table.clear();
 			_last_error = "";
 			_data_table.clear();
-			_async.error_handler(std::function<void(const error_code&)>());
-			_async.receive_handler(std::function<void(const endpoint&, message_type&)>());
+			_async.error_handler(std::function<void(const std::error_code&)>());
+			_async.receive_handler(std::function<void(const zed_net_address_t&, message_type&)>());
 		}
 		void connection_established()
 		{
 #ifdef SHORYU_ENABLE_LOG
-			for (endpoint& ep : _eps)
-			{
-				std::string s = ep.address().to_string();
-				s += ":" + std::to_string(ep.port());
-				log << "ep " << s << "\n";
-			}
+			if (m_host)
+				for (zed_net_address_t& ep : m_clientEndpoints)
+					log << "client " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
+			else
+				log << "host" << zed_net_host_to_str(_host_ep.host) << ":" << _host_ep.port << "\n";
+
+			log << "players: " << m_num_players << "\n";
 #endif
 			std::unique_lock<std::mutex> lock1(_connection_mutex);
 			std::unique_lock<std::mutex> lock2(_mutex);
-			_frame_table.resize(_eps.size() + 1);
-			_data_table.resize(_eps.size() + 1);
-			_async.error_handler([&](const error_code &error){err_hdl(error);});
-			_async.receive_handler([&](const endpoint& ep, message_type& msg){recv_hdl(ep, msg);});
+			_frame_table.resize(m_num_players);
+			_data_table.resize(m_num_players);
+			_async.error_handler([&](const std::error_code &error){err_hdl(error);});
+			_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){recv_hdl(ep, msg);});
 		}
 		int calculate_delay(uint32_t rtt)
 		{
@@ -681,62 +722,34 @@ namespace shoryu
 			int delay;
 		};
 
-		typedef std::map<endpoint, peer_info> state_map;
+		typedef std::map<zed_net_address_t, peer_info> state_map;
 
-		state_map _states;
 		MessageType _current_state;	
-		unsigned int _players_needed;
-		endpoint _host_ep;
-		std::semaphore _connection_sem;
+		zed_net_address_t _host_ep;
+		//std::semaphore _connection_sem;
 		std::mutex _connection_mutex;
+		std::condition_variable _connection_cv;
 		static const int connection_timeout = 1000;
 		StateType _state;
 		state_check_handler_type _state_check_handler;
 		int64_t _first_received_frame;
 		int64_t _last_received_frame;
 
-		bool check_peers_readiness()
+		bool create_handler()
 		{
-#ifdef SHORYU_ENABLE_LOG
-			log << "[" << time_ms() - log_start << "] Out.Ready\n";
-#endif
-			return send() == 0;
+			_current_state = MessageType::Ready;
+			return true;
 		}
-
-		bool create_handler(int players, int timeout)
-		{
-			_players_needed = players;
-			_current_state = MessageType::Wait;
-			msec start_time = time_ms();
-			if(timeout)
-			{
-				if(!_connection_sem.timed_wait(timeout))
-					return false;
-			}
-			else
-				_connection_sem.wait();
-			if(_current_state != MessageType::Ready)
-				return false;
-			while(true)
-			{
-				if(timeout > 0 && (time_ms() - start_time > timeout))
-					return false;
-				if(check_peers_readiness())
-					return true;
-				sleep(50);
-			}
-		}
-		void create_recv_handler(const endpoint& ep, message_type& msg)
+		void create_recv_handler(const zed_net_address_t& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
 			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
 			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
 			log << " (" << _side << ") <--";
-			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << " (" << (int)msg.side << ") " << zed_net_host_to_str(ep.host) << ":" << (int)ep.port;
 			log << "\n";
 #endif
 			std::unique_lock<std::mutex> lock(_connection_mutex);
-
 			if(msg.cmd == MessageType::Join)
 			{
 				_username_map[ep] = msg.username;
@@ -746,62 +759,43 @@ namespace shoryu
 					msg.state = _state;
 					_async.queue(ep, msg);
 					send(ep);
-					_connection_sem.post();
+					_connection_cv.notify_all();
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << time_ms() - log_start << "] Out.Deny\n";
+					log << "[" << time_ms() - log_start << "] Deny -> " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
 #endif
 					return;
 				}
-				if(_current_state == MessageType::Wait)
+
+				if (std::find(m_clientEndpoints.begin(), m_clientEndpoints.end(), ep) == m_clientEndpoints.end())
 				{
-					peer_info pi = { MessageType::Join, time_ms(), 0 };
-					_states[ep] = pi;
-				}
-				else
-					_states[ep].time = time_ms();
-				
-				std::vector<endpoint> ready_list;
-				ready_list.push_back(msg.host_ep);
-				for (auto &kv : _states)
-				{
-					if((time_ms() - kv.second.time < 1000) && kv.second.state == MessageType::Join)
-						ready_list.push_back(kv.first);
-					if(ready_list.size() >= _players_needed )
-						break;
+					m_clientEndpoints.push_back(ep);
+					m_num_players++;
 				}
 
-				if(ready_list.size() >= _players_needed)
+				if (m_num_players)
 				{
-					if(_current_state == MessageType::Wait)
+					message_type msg;
+					msg.cmd = MessageType::Info;
+					msg.rand_seed = (uint32_t)time(0);
+					//msg.eps = ready_list;
+					msg.state = _state;
+					msg.num_players = m_num_players;
+					msg.usernames.push_back(_username);
+					for (auto &ep : m_clientEndpoints)
+						msg.usernames.push_back(_username_map[ep]);
+
+					srand(msg.rand_seed);
+					for(int i = 0; i < m_clientEndpoints.size(); i++)
 					{
-						message_type msg;
-						msg.cmd = MessageType::Info;
-						msg.rand_seed = (uint32_t)time(0);
-						msg.eps = ready_list;
-						msg.state = _state;
-						_eps = ready_list;
-						for(size_t i = 0; i < _eps.size(); i++)
-						{
-							if(i != _side)
-								msg.usernames.push_back(_username_map[_eps[i]]);
-							else
-								msg.usernames.push_back(_username);
-						}
-
-						//_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
-						srand(msg.rand_seed);
-						for(size_t i = 1; i < ready_list.size(); i++)
-						{
-							msg.side = i;
-							_async.queue(ready_list[i], msg);
-						}
-						send();
-						_current_state = MessageType::Ping;
-						_side = 0;
-					}
+						auto &ep2 = m_clientEndpoints[i];
+						msg.side = i + 1;
+						_async.queue(ep2, msg);
 #ifdef SHORYU_ENABLE_LOG
-					log << "[" << time_ms() - log_start << "] Out.Info\n";
+						log << "[" << time_ms() - log_start << "] Info --^ " << zed_net_host_to_str(ep2.host) << ":" << ep2.port << "\n";
 #endif
+					}
+					send();
+					_side = 0;
 				}
 			}
 			if(msg.cmd == MessageType::Ping)
@@ -811,47 +805,26 @@ namespace shoryu
 				_async.queue(ep, msg);
 				send(ep);
 #ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] Out.None\n";
+				log << "[" << time_ms() - log_start << "] None --> " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
 #endif
 			}
-			if(msg.cmd == MessageType::Delay)
+			if (msg.cmd == MessageType::Ready)
 			{
-				peer_info pi = { MessageType::Delay, 0, msg.delay };
-				_states[ep] = pi;
-				int ready = 0;
-				int d = 0;
-				for (auto& kv : _states)
-				{
-					if(kv.second.state == MessageType::Delay)
-					{
-						d += kv.second.delay;
-						if( ++ready == (_players_needed - 1))
-						{
-							d /= _players_needed - 1;
-							break;
-						}
-					}
-				}
-				if(ready == (_players_needed - 1))
-				{
-					if(_current_state != MessageType::Ready)
-					{
-						message_type msg(MessageType::Delay);
-						msg.delay = d;
-						delay(d);
-						for(size_t i = 0; i < _eps.size(); i++)
-							_async.queue(_eps[i], msg);
-						_current_state = MessageType::Ready;
-						_connection_sem.post();
-					}
-				}
+				send();
+				m_ready_list.push_back(ep);
+				_connection_cv.notify_all();
 			}
 		}
 
-		bool join_handler(const endpoint& host_ep, int timeout)
+		bool join_handler(const zed_net_address_t& host_ep, int timeout)
 		{
 			_host_ep = host_ep;
 			msec start_time = time_ms();
+			std::unique_lock<std::mutex> lock(_connection_mutex);
+			auto pred = [&](){
+				return _current_state == MessageType::Ready;
+			};
+
 			do
 			{
 				if(_shutdown)
@@ -862,61 +835,29 @@ namespace shoryu
 				msg.username = _username;
 				msg.host_ep = host_ep;
 				msg.state = _state;
-				_async.queue(host_ep, msg);
-				send(host_ep);
+				if (!send(host_ep))
+				{
+					_async.queue(host_ep, msg);
+					send(host_ep);
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() - log_start << "] Out.Join\n";
 #endif
+				}
 			}
-			while(!_connection_sem.timed_wait(500));
+			while(!_connection_cv.wait_for(lock, std::chrono::milliseconds(500), pred));
 
 			if(_current_state == MessageType::Deny)
 				return false;
 
-			int rtt = 0;
-			message_type msg(MessageType::Delay);
-			msg.delay = calculate_delay(rtt);
-			_async.queue(host_ep, msg);
-
-			bool packet_reached = false;
-			while(true)
-			{
-				if(!packet_reached)
-					packet_reached = (send(host_ep) == 0);
-
-				if(_shutdown)
-					return false;
-#ifdef SHORYU_ENABLE_LOG
-				log << "[" << time_ms() - log_start << "] Out.Delay\n";
-#endif
-				if(timeout > 0 && (time_ms() - start_time > timeout))
-					return false;
-				if(_current_state == MessageType::Ready)
-				{
-					if(packet_reached)
-						break;
-				}
-				_connection_sem.timed_wait(50);
-			}
-
-			{
-				message_type msg(MessageType::Ready);
-				_async.queue(host_ep, msg);
-				for(int i = 0; i < delay(); i++)
-				{
-					if(!send(host_ep)) break;
-					sleep(17);
-				}
-			}
 			return true;
 		}
-		void join_recv_handler(const endpoint& ep, message_type& msg)
+		void join_recv_handler(const zed_net_address_t& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
 			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
 			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
 			log << " (" << _side << ") <--";
-			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << " (" << (int)msg.side << ") " << zed_net_host_to_str(ep.host) << ":" << (int)ep.port;
 			log << "\n";
 #endif
 			if(ep != _host_ep)
@@ -925,34 +866,30 @@ namespace shoryu
 			if(msg.cmd == MessageType::Info)
 			{
 				_side = msg.side;
-				_eps = msg.eps;
-				for(size_t i = 0; i < _eps.size(); i++)
-				{
-					_username_map[_eps[i]] = msg.usernames[i];
-				}
-				//_eps.erase(std::find(_eps.begin(), _eps.end(), _eps[_side]));
+				m_num_players = msg.num_players;
 				std::srand(msg.rand_seed);
-				_current_state = MessageType::Info;
+				_current_state = MessageType::Ready;
 				if(!_state_check_handler(_state, msg.state))
 					_current_state = MessageType::Deny;
-				_connection_sem.post();
+				_connection_cv.notify_all();
 			}
 			if(msg.cmd == MessageType::Deny)
 			{
 				_current_state = MessageType::Deny;
 				_state_check_handler(_state, msg.state);
-				_connection_sem.post();
+				_connection_cv.notify_all();
 			}
 			if(msg.cmd == MessageType::Delay)
 			{
 				delay(msg.delay);
-				if(_current_state != MessageType::Ready)
-				{
-					_current_state = MessageType::Ready;
-				}
+				_current_state = MessageType::Ready;
 				_async.queue(ep, message_type(MessageType::Ready));
 				send(ep);
-				_connection_sem.post();
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() - log_start << "] Ready --> " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
+#endif
+				m_ready = true;
+				_connection_cv.notify_all();
 			}
 			if(msg.cmd == MessageType::Ping)
 			{
@@ -960,21 +897,24 @@ namespace shoryu
 				msg.cmd = MessageType::None;
 				_async.queue(ep, msg);
 				send(ep);
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() - log_start << "] Ping  --> " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
+#endif
 			}
 		}
 		
-		void recv_hdl(const endpoint& ep, message_type& msg)
+		void recv_hdl(const zed_net_address_t& ep, message_type& msg)
 		{
 #ifdef SHORYU_ENABLE_LOG
 			log << "[" << std::setw(12) << time_ms() - log_start << "] ";
 			log << messageTypeNames[(int)msg.cmd] << std::setw(7) << msg.frame_id;
 			log << " (" << _side << ") <--";
-			log << " (" << (int)msg.side << ") " << ep.address().to_string() << ":" << (int)ep.port();
+			log << " (" << (int)msg.side << ") " << zed_net_host_to_str(ep.host) << ":" << (int)ep.port;
 			log << "\n";
 #endif
 
 			// clients ignore messages not from host
-			if (!m_host && ep != _eps[0])
+			if (!m_host && ep != _host_ep)
 				return;
 
 			//if(_sides.find(ep) != _sides.end())
@@ -984,12 +924,12 @@ namespace shoryu
 				// if we're server, echo to everyone else
 				if (m_host && side != 0)
 				{
-					for (int i = 1; i < _eps.size(); i++)
+					for (int i = 0; i < m_clientEndpoints.size(); i++)
 					{
-						if (i == side)
+						if (i + 1 == side)
 							continue;
-						_async.queue(_eps[i], msg);
-						send(_eps[i]);
+						_async.queue(m_clientEndpoints[i], msg);
+						send(m_clientEndpoints[i]);
 					}
 				}
 
@@ -1032,7 +972,7 @@ namespace shoryu
 				}
 			}
 		}
-		void err_hdl(const error_code& error)
+		void err_hdl(const std::error_code& error)
 		{
 			std::unique_lock<std::mutex> lock(_error_mutex);
 			_last_error = error.message();
@@ -1049,13 +989,17 @@ namespace shoryu
 		bool _end_session_request;
 		
 		std::string _username;
-		typedef std::map<endpoint, std::string> username_map;
+		typedef std::map<zed_net_address_t, std::string> username_map;
 
 		username_map _username_map;
+		std::vector<zed_net_address_t> m_ready_list;
+		bool m_ready;
+
 		std::string _last_error;
 
 		async_transport<message_type> _async;
-		endpoint_container _eps;
+		endpoint_container m_clientEndpoints;
+		int m_num_players;
 		frame_table _frame_table;
 		std::mutex _mutex;
 		std::mutex _error_mutex;

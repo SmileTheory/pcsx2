@@ -1,12 +1,13 @@
 #pragma once
 
 #include <list>
-#include <boost/circular_buffer.hpp>
+#include <deque>
 #include <memory>
 #include <mutex>
 #include <algorithm>
 
 #include "datagram_header.h"
+#include "zed_net.h"
 
 namespace shoryu
 {
@@ -17,7 +18,7 @@ namespace shoryu
 			: rtt_avg(-1),rtt_max(-1),rtt_min(-1),remote_time(0),recv_time(0)
 		{
 		}
-		endpoint ep;
+		zed_net_address_t ep;
 		uint64_t remote_time;
 		uint64_t recv_time;
 
@@ -27,7 +28,7 @@ namespace shoryu
 	};
 
 	template<typename MsgType>
-	class peer : boost::noncopyable
+	class peer : std::noncopyable
 	{
 	private:
 		struct msg_wrapper
@@ -47,7 +48,7 @@ namespace shoryu
 		};
 		typedef std::list<msg_wrapper> container_type;
 	public:
-		peer() : received_msgs(32),next_id(1){}
+		peer() : received_msgs(),next_id(1){}
 		peer_data<MsgType> data;
 
 		inline uint64_t queue_msg(const MsgType& msg)
@@ -93,6 +94,8 @@ namespace shoryu
 					// TODO: Optimize here
 					if(std::find(received_msgs.begin(), received_msgs.end(), msg.id) == received_msgs.end())
 					{
+						if (received_msgs.size() == 32)
+							received_msgs.pop_front();
 						received_msgs.push_back(msg.id);
 						data_list.push_back(msg.data);
 					}
@@ -148,7 +151,7 @@ namespace shoryu
 		}
 	private:
 		container_type msg_queue;
-		typedef boost::circular_buffer<uint64_t> received_msgs_type;
+		typedef std::deque<uint64_t> received_msgs_type;
 		received_msgs_type received_msgs;
 		uint64_t next_id;
 		inline void estimate_rtt(int32_t rtt)

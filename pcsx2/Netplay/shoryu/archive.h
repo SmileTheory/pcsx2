@@ -1,12 +1,11 @@
 #pragma once
 #include <exception>
 #include <algorithm>
-
-#include <boost/utility.hpp>
+#include "boost_extensions.h"
 
 namespace shoryu
 {
-	class archive : boost::noncopyable
+	class archive : std::noncopyable
 	{
 	public:
 		inline size_t pos()

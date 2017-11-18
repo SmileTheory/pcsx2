@@ -219,6 +219,7 @@
     <ClCompile Include="..\..\Netplay\Replay.cpp" />
     <ClCompile Include="..\..\Netplay\ReplayPlugin.cpp" />
     <ClCompile Include="..\..\Netplay\ReplaySettings.cpp" />
+    <ClCompile Include="..\..\Netplay\shoryu\zed_net.cpp" />
     <ClCompile Include="..\..\Netplay\Utilities.cpp" />
     <ClCompile Include="..\..\Linux\LnxConsolePipe.cpp">
       <ExcludedFromBuild>true</ExcludedFromBuild>
@@ -498,6 +499,7 @@
     <ClInclude Include="..\..\Netplay\shoryu\peer.h" />
     <ClInclude Include="..\..\Netplay\shoryu\session.h" />
     <ClInclude Include="..\..\Netplay\shoryu\tools.h" />
+    <ClInclude Include="..\..\Netplay\shoryu\zed_net.h" />
     <ClInclude Include="..\..\Netplay\Utilities.h" />
     <ClInclude Include="..\..\Mdec.h" />
     <ClInclude Include="..\..\Patch.h" />

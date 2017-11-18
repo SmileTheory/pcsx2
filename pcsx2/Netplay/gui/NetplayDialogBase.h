@@ -20,7 +20,7 @@
 #include <wx/statline.h>
 #include <wx/sizer.h>
 #include <wx/button.h>
-#include <wx/dialog.h>
+#include <wx/frame.h>
 #include <wx/textctrl.h>
 #include <wx/checkbox.h>
 #include <wx/spinctrl.h>
@@ -38,7 +38,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// Class NetplayDialogBase
 ///////////////////////////////////////////////////////////////////////////////
-class NetplayDialogBase : public wxDialog 
+class NetplayDialogBase : public wxFrame 
 {
 	private:
 	
@@ -56,7 +56,8 @@ class NetplayDialogBase : public wxDialog
 	
 	public:
 		
-		NetplayDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Netplay - PCSX2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 250,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSTAY_ON_TOP|wxSYSTEM_MENU ); 
+		NetplayDialogBase( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Netplay - PCSX2"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 250,-1 ), long style = wxCAPTION|wxCLOSE_BOX|wxSYSTEM_MENU );
+		
 		~NetplayDialogBase();
 	
 };

@@ -4,6 +4,7 @@
 #include <wx/stdpaths.h>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 #include "Netplay/NetplayPlugin.h"
 #include "Netplay/INetplayDialog.h"
 
@@ -90,8 +91,6 @@ public:
 
 			_thread.reset(new std::thread([this, connection_func]() {
 				_state = connection_func() ? SSReady : SSCancelled;
-				if(_dialog)
-					_dialog->Close();
 			}));
 		}
 		else
@@ -212,8 +211,8 @@ public:
 	{
 		std::unique_lock<std::mutex> connection_lock(_connection_mutex);
 		_ready_to_connect_cond.wait(connection_lock);
-		shoryu::endpoint ep = shoryu::resolve_hostname(std::string(ip.ToAscii().data()));
-		ep.port(port);
+		zed_net_address_t ep;
+		zed_net_get_address(&ep, ip.ToAscii(), port);
 		auto state = Utilities::GetSyncState();
 		if(state)
 		{
@@ -224,90 +223,16 @@ public:
 				{return CheckSyncStates(s1, s2);}, timeout))
 				return false;
 
+			_game_name = wxDateTime::Now().Format(wxT("[%Y.%m.%d %H-%M] "))  + wxT("[") + Utilities::GetCurrentDiscName() + wxT("]");
+
 			{
 				recursive_lock lock(_mutex);
 				if(!_session || _session->state() != shoryu::MessageType::Ready)
 					return false;
 				_dialog->OnConnectionEstablished(_session->delay());
-				auto ep = _session->endpoints()[0];
-				std::string player_name = _session->username(ep);
-				if(!player_name.length())
-				{
-					std::stringstream ss;
-					ss << ep.address().to_string() << ":" << ep.port();
-					player_name = ss.str();
-				}
-				wxString host_username = wxString(player_name.c_str(), wxConvUTF8);
-				_dialog->SetStatus(wxT("Connected to ") + host_username);
-				wxString my_name = wxString(_session->username().c_str(), wxConvUTF8);
-				if(!my_name.Len())
-					my_name = wxT("Me");
-				_game_name = wxDateTime::Now().Format(wxT("[%Y.%m.%d %H-%M] "))  + wxT(" [") + Utilities::GetCurrentDiscName() + wxT("] ") + host_username + wxT(" vs ") + my_name;
 			}
 
-			int delay = _dialog->WaitForConfirmation();
-			if(delay <= 0)
-				return false;
-
-#if 0
-			_dialog->SetStatus(wxT("Memory card synchronization..."));
-
-			_mcd_backup = Utilities::ReadMCD(0,0);
-
-			shoryu::msec timeout_timestamp = shoryu::time_ms() + 30000;
-			size_t mcd_size = Utilities::GetMCDSize(0,0);
-			Utilities::block_type compressed_mcd(mcd_size);
-			size_t pos = 0;
-			while(true)
-			{
-				bool ready;
-				shoryu::message_data data;
-				{
-					recursive_lock lock(_mutex);
-					if(!_session || _session->end_session_request())
-						return false;
-					_session->send();
-					ready = _session->get_data(1-_session->side(), data, 50);
-				}
-				if(!ready)
-				{
-					if(timeout_timestamp < shoryu::time_ms())
-					{
-						ConsoleErrorMT(wxT("NETPLAY: Timeout while synchonizing memory cards."), _ready_to_print_error_check);
-						return false;
-					}
-				}
-				else
-				{
-					if(data.data_length != 9 || memcmp(data.p.get(), "BLOCK_END", 9) != 0)
-					{
-						std::copy(data.p.get(), data.p.get() + data.data_length, compressed_mcd.data()+pos);
-						pos += data.data_length;
-					}
-					else
-					{
-						compressed_mcd.resize(pos);
-						Utilities::block_type uncompressed_mcd(mcd_size);
-
-						if(!Utilities::Uncompress(compressed_mcd, uncompressed_mcd))
-						{
-							ConsoleErrorMT(wxT("NETPLAY: Unable to decompress MCD buffer."), _ready_to_print_error_check);
-							return false;
-						}
-						if(uncompressed_mcd.size() != mcd_size)
-						{
-							ConsoleErrorMT(wxT("NETPLAY: Invalid MCD received from host."), _ready_to_print_error_check);
-							return false;
-						}
-						Utilities::WriteMCD(0,0,uncompressed_mcd);
-						if(_replay)
-							_replay->Data(uncompressed_mcd);
-						break;
-					}
-				}
-			}
-#endif
-			return true;
+			return _session->wait_for_start();
 		}
 		return false;
 	}
@@ -320,30 +245,18 @@ public:
 		{
 			if(_replay)
 				_replay->SyncState(*state);
+			_dialog->OnConnectionEstablished(1);
 			if(!_session || !_session->create(g_Conf->Netplay.NumPlayers, *state,
 				[&](const EmulatorSyncState& s1, const EmulatorSyncState& s2) -> bool
 				{return CheckSyncStates(s1, s2);}))
 				return false;
-			
+
+			_game_name = wxDateTime::Now().Format(wxT("[%Y.%m.%d %H-%M] "))  + wxT("[") + Utilities::GetCurrentDiscName() + wxT("]");
+
 			{
 				recursive_lock lock(_mutex);
 				if(!_session || _session->state() != shoryu::MessageType::Ready)
 					return false;
-				_dialog->OnConnectionEstablished(_session->delay());
-				auto ep = _session->endpoints()[0];
-				std::string player_name = _session->username(ep);
-				if(!player_name.length())
-				{
-					std::stringstream ss;
-					ss << ep.address().to_string() << ":" << ep.port();
-					player_name = ss.str();
-				}
-				wxString client_username = wxString(player_name.c_str(), wxConvUTF8);
-				_dialog->SetStatus(wxT("Connection from ") + client_username);
-				wxString my_name = wxString(_session->username().c_str(), wxConvUTF8);
-				if(!my_name.Len())
-					my_name = wxT("Me");
-				_game_name = wxDateTime::Now().Format(wxT("[%Y.%m.%d %H-%M] "))  + wxT(" [") + Utilities::GetCurrentDiscName() + wxT("] ") + my_name + wxT(" vs ") + client_username;
 			}
 
 			int delay = _dialog->WaitForConfirmation();
@@ -361,69 +274,7 @@ public:
 				}
 			}
 
-#if 0
-			_dialog->SetStatus(wxT("Memory card synchronization..."));
-
-			auto uncompressed_mcd = Utilities::ReadMCD(0,0);
-			if(_replay)
-				_replay->Data(uncompressed_mcd);
-			size_t mcd_size = Utilities::GetMCDSize(0,0);
-			Utilities::block_type compressed_mcd(mcd_size);
-			if(g_Conf->Net.ReadonlyMemcard)
-				_mcd_backup = uncompressed_mcd;
-			if(!Utilities::Compress(uncompressed_mcd, compressed_mcd))
-			{
-				ConsoleErrorMT(wxT("NETPLAY: Unable to compress MCD buffer."), _ready_to_print_error_check);
-				return false;
-			}
-
-			{
-				recursive_lock lock(_mutex);
-				if(!_session || _session->state() != shoryu::Ready)
-					return false;
-				size_t blockSize = 128;
-				for(size_t i = 0; i < compressed_mcd.size(); i+=blockSize)
-				{
-					shoryu::message_data data;
-					data.data_length = compressed_mcd.size() - i;
-					if(data.data_length > blockSize)
-						data.data_length = blockSize;
-					data.p.reset(new char[data.data_length]);
-					std::copy(compressed_mcd.data()+i, compressed_mcd.data()+i+data.data_length, data.p.get());
-					_session->queue_data(data);
-				}
-				shoryu::message_data data;
-				data.data_length = 9;
-				data.p.reset(new char[data.data_length]);
-				char* blockEndMsg = "BLOCK_END";
-				std::copy(blockEndMsg, blockEndMsg + data.data_length, data.p.get());
-				_session->queue_data(data);
-			}
-#endif
-			shoryu::msec timeout_timestamp = shoryu::time_ms() + 30000;
-			while(true)
-			{
-				{
-					recursive_lock lock(_mutex);
-					if(!_session || _session->state() != shoryu::MessageType::Ready)
-						return false;
-					if(!_session->send_sync())
-						break;
-					if(_session->end_session_request())
-						return false;
-					if(_session->first_received_frame() != -1)
-					{
-						_session->clear_queue();
-						break;
-					}
-				}
-				if(timeout_timestamp < shoryu::time_ms())
-				{
-					ConsoleErrorMT(wxT("NETPLAY: Timeout while synchonizing memory cards."), _ready_to_print_error_check);
-					return false;
-				}
-			}
-			return true;
+			return _session->wait_for_start();
 		}
 		return false;
 	}
@@ -560,7 +411,7 @@ public:
 		if(_is_stopped || !_session) return value;
 
 		// ignore unassigned pads
-		if (side >= _session->endpoints().size())
+		if (side >= _session->num_players())
 			return (index < 2) ? 0xff : 0x7f;
 
 		Message frame;

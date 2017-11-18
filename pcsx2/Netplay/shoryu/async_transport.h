@@ -132,22 +132,10 @@ namespace shoryu
 			if(m_is_running)
 				queue_impl(ep, data);
 		}
-		int send(const zed_net_address_t& ep, int delay_ms, int loss_percentage)
-		{
-			if(m_is_running)
-				return send_impl(ep, delay_ms, loss_percentage);
-			return -1;
-		}
 		int send(const zed_net_address_t& ep)
 		{
 			if(m_is_running)
 				return send_impl(ep);
-			return -1;
-		}
-		int send_sync(const zed_net_address_t& ep)
-		{
-			if(m_is_running)
-				return send_impl(ep, true);
 			return -1;
 		}
 		inline const peer_list_type peers()
@@ -166,7 +154,7 @@ namespace shoryu
 			return m_socket.port;
 		}
 	protected:
-		inline int send_impl(const zed_net_address_t& ep, bool sync = false)
+		inline int send_impl(const zed_net_address_t& ep)
 		{
 			transaction_data<OperationType::Send,BufferSize>& t = m_send_buffer.next();
 			t.ep = ep;
@@ -174,7 +162,6 @@ namespace shoryu
 			int send_n = find_peer(ep).serialize_datagram(oa);
 
 			t.buffer_length = oa.pos();
-			// FIXME: sync not supported
 			if (zed_net_udp_socket_send(&m_socket, ep, t.buffer.data(), t.buffer_length))
 			{
 				// FIXME: fix error handler
@@ -188,32 +175,6 @@ namespace shoryu
 
 			return send_n;
 		}
-
-		inline int send_impl(const zed_net_address_t& ep, int delay_ms, int loss_percentage)
-		{
-			//std::shared_ptr<boost::asio::deadline_timer> timer(new boost::asio::deadline_timer(*g_io_service));
-			//timer->expires_from_now(boost::posix_time::milliseconds(delay_ms));
-
-			std::shared_ptr<transaction_data<OperationType::Send,BufferSize>> t(new transaction_data<OperationType::Send,BufferSize>());
-			t->ep = ep;
-			oarchive oa(t->buffer.data(), t->buffer.data() + t->buffer.size());
-			int send_n = find_peer(ep).serialize_datagram(oa);
-
-			if((rand() % 100)+1 <= loss_percentage)
-				return send_n;
-
-			t->buffer_length = oa.pos();
-			// FIXME: sync & delay not supported
-			if (zed_net_udp_socket_send(&m_socket, ep, t->buffer.data(), t->buffer_length))
-			{
-				// FIXME: fix error handler
-				if (m_err_handler)
-					m_err_handler(std::error_code());
-			}
-
-			return send_n;
-		}
-
 		inline uint64_t queue_impl(const zed_net_address_t& ep, const DataType& data)
 		{
 			return find_peer(ep).queue_msg(data);

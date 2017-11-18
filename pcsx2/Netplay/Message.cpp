@@ -7,7 +7,7 @@
 #define NETPLAY_SYNC_NUM_INPUTS 2
 #endif
 
-const char defaultInput[] = {0xff, 0xff, 0x7f, 0x7f, 0x7f, 0x7f};
+const unsigned char defaultInput[] = {0xff, 0xff, 0x7f, 0x7f, 0x7f, 0x7f};
 Message::Message()
 {
 	std::copy(defaultInput, defaultInput + sizeof(defaultInput), input);

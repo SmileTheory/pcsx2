@@ -200,8 +200,7 @@ namespace shoryu
 		std::fstream log;
 		msec log_start;
 #endif
-		session() : 
-			_send_delay_max(0), _send_delay_min(0), _packet_loss(0)
+		session() 
 		{
 #ifdef SHORYU_ENABLE_LOG
 			std::string filename;
@@ -347,7 +346,7 @@ namespace shoryu
 			}
 			else
 			{
-				for (int i = 0; i < m_clientEndpoints.size(); i++)
+				for (size_t i = 0; i < m_clientEndpoints.size(); i++)
 				{
 					_async.queue(m_clientEndpoints[i], msg);
 #ifdef SHORYU_ENABLE_LOG
@@ -502,16 +501,7 @@ namespace shoryu
 
 		inline int send(const zed_net_address_t& ep)
 		{
-			if(_packet_loss == 0 && _send_delay_max == 0)
-				return _async.send(ep);
-			else
-			{
-				int delay = _send_delay_min;
-				int max_add = _send_delay_max - _send_delay_min;
-				if(max_add > 0)
-					delay += rand() % max_add;
-				return _async.send(ep, delay, _packet_loss);
-			}
+			return _async.send(ep);
 		}
 		inline bool get(int side, FrameType& f, int64_t frame, int timeout)
 		{
@@ -620,30 +610,6 @@ namespace shoryu
 		int64_t last_received_frame()
 		{
 			return _last_received_frame;
-		}
-		int send_delay_min()
-		{
-			return _send_delay_min;
-		}
-		void send_delay_min(int ms)
-		{
-			_send_delay_min = ms;
-		}
-		int send_delay_max()
-		{
-			return _send_delay_max;
-		}
-		void send_delay_max(int ms)
-		{
-			_send_delay_max = ms;
-		}
-		int packet_loss()
-		{
-			return _packet_loss;
-		}
-		void packet_loss(int ms)
-		{
-			_packet_loss = ms;
 		}
 		const std::string& last_error()
 		{
@@ -785,7 +751,7 @@ namespace shoryu
 						msg.usernames.push_back(_username_map[ep]);
 
 					srand(msg.rand_seed);
-					for(int i = 0; i < m_clientEndpoints.size(); i++)
+					for(size_t i = 0; i < m_clientEndpoints.size(); i++)
 					{
 						auto &ep2 = m_clientEndpoints[i];
 						msg.side = i + 1;
@@ -924,7 +890,7 @@ namespace shoryu
 				// if we're server, echo to everyone else
 				if (m_host && side != 0)
 				{
-					for (int i = 0; i < m_clientEndpoints.size(); i++)
+					for (size_t i = 0; i < m_clientEndpoints.size(); i++)
 					{
 						if (i + 1 == side)
 							continue;
@@ -983,9 +949,6 @@ namespace shoryu
 		int64_t _data_index;
 		bool m_host;
 		int _side;
-		int _packet_loss;
-		int _send_delay_max;
-		int _send_delay_min;
 		bool _end_session_request;
 		
 		std::string _username;

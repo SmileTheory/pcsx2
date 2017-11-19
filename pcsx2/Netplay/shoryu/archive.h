@@ -49,16 +49,7 @@ namespace shoryu
 		inline void write(char* d, size_t length)
 		{
 			overflow_check(length);
-#if defined(_MSC_VER) && _MSC_VER >= 1400 
-#pragma warning(push) 
-#pragma warning(disable:4996) 
-#endif 
-
 			std::copy(d, d+length, next_);
-
-#if defined(_MSC_VER) && _MSC_VER >= 1400 
-#pragma warning(pop) 
-#endif 
 			next_+=length;
 		}
 	};

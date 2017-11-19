@@ -1,5 +1,8 @@
 #include "PrecompiledHeader.h"
 #include "IOPHook.h"
+
+#include <wx/time.h>
+
 #include <fstream>
 #include <iostream>
 #include <iomanip>
@@ -7,6 +10,8 @@
 
 IOPHook* g_IOPHook = 0;
 //#define LOG_IOP
+
+#define NETPLAY_ANALOG_STICKS
 
 #ifdef NETPLAY_ANALOG_STICKS
 #define NETPLAY_SYNC_NUM_INPUTS 6
@@ -30,6 +35,7 @@ namespace
 	int g_pollSlot[2] = {0, 0};
 	int g_pollIndex = -1;
 	int g_hookFrameNum = -1;
+	int g_sendPad = 0;
 	bool g_active = false;
 #ifdef LOG_IOP
 	std::fstream g_log;
@@ -55,6 +61,12 @@ namespace
 	}
 	u8 CALLBACK NETPADstartPoll(int port)
 	{
+		if (g_sendPad)
+		{
+			g_IOPHook->AcceptInput(0);
+			g_sendPad = 0;
+		}
+
 		g_pollPort = port - 1;
 		g_pollIndex = 0;
 
@@ -107,6 +119,9 @@ namespace
 		{
 			int pad = NET_CurrentPad();
 
+			if (pad == 0 && g_pollIndex == 0)
+				g_sendPad = 1;
+
 			if (g_pollIndex < 2)
 			{
 				// nothing
@@ -114,9 +129,6 @@ namespace
 			else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
 			{
 				value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
-
-				if (pad == 0 && g_pollIndex == 1 + NETPLAY_SYNC_NUM_INPUTS)
-					g_IOPHook->AcceptInput(pad);
 			}
 			else if (g_pollIndex > 3 && g_pollIndex < 8)
 			{
@@ -149,12 +161,19 @@ void HookIOP(IOPHook* hook)
 	g_pollPort = 0;
 	g_pollIndex = 0;
 	g_hookFrameNum = 0;
+	g_sendPad = 0;
 
 	if(g_active)
 		return;
 	g_active = true;
 #ifdef LOG_IOP
-	g_log.open("iop.log", std::ios_base::trunc | std::ios_base::out);
+	std::string filename;
+
+	filename = "iop.";
+	filename += std::to_string(wxGetUTCTimeMillis().GetValue());
+	filename += ".log";
+
+	g_log.open(filename, std::ios_base::trunc | std::ios_base::out);
 	g_log.fill('0');
 #endif
 

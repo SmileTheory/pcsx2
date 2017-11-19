@@ -410,11 +410,12 @@ public:
 		}
 		if(_is_stopped || !_session) return value;
 
+		Message frame;
+
 		// ignore unassigned pads
 		if (side >= _session->num_players())
-			return (index < 2) ? 0xff : 0x7f;
+			return frame.input[index];
 
-		Message frame;
 		if(side == 0)
 			_my_frame.input[index] = value;
 		auto timeout = shoryu::time_ms() + 10000;

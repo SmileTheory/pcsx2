@@ -480,24 +480,6 @@ namespace shoryu
 			}
 			return n;
 		}
-		inline int send_sync()
-		{
-			int n = 0;
-			if (!m_host)
-			{
-				n += send_sync(_host_ep);
-			}
-			else
-			{
-				for (auto &ep : m_clientEndpoints)
-					n += send_sync(ep);
-			}
-			return n;
-		}
-		inline int send_sync(const zed_net_address_t& ep)
-		{
-			return _async.send_sync(ep);
-		}
 
 		inline int send(const zed_net_address_t& ep)
 		{

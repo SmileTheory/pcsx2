@@ -1,6 +1,8 @@
 #include "PrecompiledHeader.h"
 #include "Message.h"
 
+#define NETPLAY_ANALOG_STICKS
+
 #ifdef NETPLAY_ANALOG_STICKS
 #define NETPLAY_SYNC_NUM_INPUTS 6
 #else

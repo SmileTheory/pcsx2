@@ -32,4 +32,7 @@ public:
 	virtual void SetStatus(const wxString& status) = 0;
 
 	virtual void SetUserlist(const std::vector<std::string> &usernames) = 0;
+
+	virtual void SetSendChatMessageHandler(const std::function<void(std::string message)>& handler) = 0;
+	virtual void AddChatMessage(const std::string &username, const std::string &message) = 0;
 };

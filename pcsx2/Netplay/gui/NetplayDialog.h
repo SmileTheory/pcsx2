@@ -21,6 +21,7 @@ public:
 	void SetReadonly(bool readonly = true);
 	void EnableCancel(bool enable = true);
 	void SetOKHandler(const event_handler_type& handler);
+	void SetSendChatMessageHandler(const std::function<void(std::string message)>& handler);
 	void SetCloseEventHandler(const event_handler_type& handler);
 	NetplaySettingsPanel& GetSettingsPanel();
 	NetplayLobbyPanel& GetLobbyPanel();

@@ -49,6 +49,10 @@ void NetplayDialog::SetOKHandler(const event_handler_type& handler)
 	m_settingsPanel.SetOKHandler(handler);
 	m_lobbyPanel.SetStartHandler(handler);
 }
+void NetplayDialog::SetSendChatMessageHandler(const std::function<void(std::string message)>& handler)
+{
+	m_lobbyPanel.SetSendTextHandler(handler);
+}
 void NetplayDialog::SetCloseEventHandler(const event_handler_type& handler)
 {
 	m_close_handler = handler;

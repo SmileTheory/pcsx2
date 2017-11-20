@@ -66,12 +66,21 @@ public:
 			}
 			catch(...){}
 		};
+		auto sendchattext_hdl = [&](std::string msg) {
+			try
+			{
+				if (_sendchattext_handler)
+					_sendchattext_handler(msg);
+			}
+			catch (...) {}
+		};
 		Utilities::ExecuteOnMainThread([&]() {
 			if(m_dialog)
 				m_dialog.reset();
 			m_dialog.reset(new NetplayDialog((wxWindow*)GetMainFramePtr()));
 			_phase = Settings;
 			m_dialog->SetOKHandler(ok_hdl);
+			m_dialog->SetSendChatMessageHandler(sendchattext_hdl);
 			m_dialog->SetCloseEventHandler(close_hdl);
 		});
 	}
@@ -163,6 +172,19 @@ public:
 				m_dialog->GetLobbyPanel().SetUserlist(usernames);
 		});
 	}
+	void AddChatMessage(const std::string &username, const std::string &message)
+	{
+		Utilities::ExecuteOnMainThread([&]() {
+			if (m_dialog)
+				m_dialog->GetLobbyPanel().AddChatMessage(username, message);
+		});
+	}
+	void SetSendChatMessageHandler(const std::function<void(std::string message)>& handler)
+	{
+		Utilities::ExecuteOnMainThread([&]() {
+			_sendchattext_handler = handler;
+		});
+	}
 protected:
 	bool _is_closed;
 	std::shared_ptr<NetplayDialog> m_dialog;
@@ -173,6 +195,7 @@ protected:
 	NetplayConfigurationPhase _phase;
 	event_handler_type _close_handler;
 	event_handler_type _settings_ready_handler;
+	std::function<void(std::string message)> _sendchattext_handler;
 };
 
 

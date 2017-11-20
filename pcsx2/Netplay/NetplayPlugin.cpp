@@ -33,6 +33,11 @@ public:
 		if (_dialog)
 			_dialog->SetUserlist(usernames);
 	}
+	void HandleChatMessage(const std::string &username, const std::string &message)
+	{
+		if (_dialog)
+			_dialog->AddChatMessage(username, message);
+	}
 	void Open()
 	{
 		_console = Console;
@@ -70,6 +75,7 @@ public:
 		shoryu::prepare_io_service();
 		_session.reset(new session_type());
 		_session->userlist_handler([&](const std::vector<std::string> &usernames) {HandleUsernames(usernames); });
+		_session->set_chatmessage_handler([&](const std::string &username, const std::string &message) {HandleChatMessage(username, message); });
 #ifdef CONNECTION_TEST
 		_session->send_delay_min(40);
 		_session->send_delay_max(80);
@@ -95,6 +101,10 @@ public:
 				connection_func = [this, settings]() { return Connect(settings.HostAddress,settings.HostPort, 0); };
 			else
 				connection_func = [this]() { return Host(0); };
+
+			_dialog->SetSendChatMessageHandler([this](const std::string &msg) {
+				_session->send_chatmessage(msg);
+			});
 
 			_thread.reset(new std::thread([this, connection_func]() {
 				_state = connection_func() ? SSReady : SSCancelled;
@@ -469,6 +479,10 @@ public:
 		}
 		value = frame.input[index];
 		return value;
+	}
+	void SendChatText(const std::string &message)
+	{
+		_session->send_chatmessage(message);
 	}
 protected:
 	bool CheckSyncStates(const EmulatorSyncState& s1, const EmulatorSyncState& s2)

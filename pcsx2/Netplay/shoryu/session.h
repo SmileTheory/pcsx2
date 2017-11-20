@@ -653,6 +653,19 @@ namespace shoryu
 		{
 			m_userlist_handler = handler;
 		}
+		inline void set_chatmessage_handler(std::function<const void(std::string, std::string)> handler)
+		{
+			m_chatmessage_handler = handler;
+		}
+		inline void send_chatmessage(const std::string &message)
+		{
+			message_type msg(MessageType::Chat);
+			msg.username = _username;
+			msg.lobby_message = message;
+			queue_message(msg);
+			send();
+			_connection_cv.notify_all();
+		}
 	protected:
 		void try_prepare()
 		{
@@ -720,6 +733,8 @@ namespace shoryu
 		state_check_handler_type _state_check_handler;
 		int64_t _first_received_frame;
 		int64_t _last_received_frame;
+
+		std::function<const void(std::string username, std::string message)> m_chatmessage_handler;
 
 		bool create_handler()
 		{
@@ -801,6 +816,11 @@ namespace shoryu
 				send();
 				m_ready_list.push_back(ep);
 				_connection_cv.notify_all();
+			}
+			if (msg.cmd == MessageType::Chat)
+			{
+				if (m_chatmessage_handler)
+					m_chatmessage_handler(msg.username, msg.lobby_message);
 			}
 		}
 
@@ -890,6 +910,11 @@ namespace shoryu
 #ifdef SHORYU_ENABLE_LOG
 				log << "[" << time_ms() - log_start << "] Ping  --> " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
 #endif
+			}
+			if (msg.cmd == MessageType::Chat)
+			{
+				if (m_chatmessage_handler)
+					m_chatmessage_handler(msg.username, msg.lobby_message);
 			}
 		}
 		

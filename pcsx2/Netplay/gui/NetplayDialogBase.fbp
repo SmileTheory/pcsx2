@@ -2241,7 +2241,7 @@
                                                 <event name="OnSetFocus"></event>
                                                 <event name="OnSize"></event>
                                                 <event name="OnText"></event>
-                                                <event name="OnTextEnter">OnTextEnter</event>
+                                                <event name="OnTextEnter">OnSendText</event>
                                                 <event name="OnTextMaxLen"></event>
                                                 <event name="OnTextURL"></event>
                                                 <event name="OnUpdateUI"></event>

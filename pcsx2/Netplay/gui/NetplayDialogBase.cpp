@@ -258,7 +258,7 @@ NetplayLobbyPanelBase::NetplayLobbyPanelBase( wxWindow* parent, wxWindowID id, c
 	this->Layout();
 	
 	// Connect Events
-	m_NetplayConsoleEntryTextCtrl->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnTextEnter ), NULL, this );
+	m_NetplayConsoleEntryTextCtrl->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnSendText ), NULL, this );
 	m_sendButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnSendText ), NULL, this );
 	m_moveUpButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnMoveUp ), NULL, this );
 	m_moveDownButton->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnMoveDown ), NULL, this );
@@ -268,7 +268,7 @@ NetplayLobbyPanelBase::NetplayLobbyPanelBase( wxWindow* parent, wxWindowID id, c
 NetplayLobbyPanelBase::~NetplayLobbyPanelBase()
 {
 	// Disconnect Events
-	m_NetplayConsoleEntryTextCtrl->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnTextEnter ), NULL, this );
+	m_NetplayConsoleEntryTextCtrl->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( NetplayLobbyPanelBase::OnSendText ), NULL, this );
 	m_sendButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnSendText ), NULL, this );
 	m_moveUpButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnMoveUp ), NULL, this );
 	m_moveDownButton->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( NetplayLobbyPanelBase::OnMoveDown ), NULL, this );

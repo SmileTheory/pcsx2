@@ -120,7 +120,6 @@ class NetplayLobbyPanelBase : public wxPanel
 		wxSpinCtrl* m_inputDelaySpinner;
 		
 		// Virtual event handlers, overide them in your derived class
-		virtual void OnTextEnter( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnSendText( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnMoveUp( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnMoveDown( wxCommandEvent& event ) { event.Skip(); }

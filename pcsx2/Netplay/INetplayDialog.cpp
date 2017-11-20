@@ -156,6 +156,13 @@ public:
 			if(m_dialog) m_dialog->SetStatus(status);
 		});
 	}
+	void SetUserlist(const std::vector<std::string> &usernames)
+	{
+		Utilities::ExecuteOnMainThread([&]() {
+			if(m_dialog)
+				m_dialog->GetLobbyPanel().SetUserlist(usernames);
+		});
+	}
 protected:
 	bool _is_closed;
 	std::shared_ptr<NetplayDialog> m_dialog;

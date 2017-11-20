@@ -27,6 +27,12 @@ public:
 		: _is_initialized(false), _is_stopped(false), _dialog(0)
 	{
 	}
+
+	void HandleUsernames(const std::vector<std::string> &usernames)
+	{
+		if (_dialog)
+			_dialog->SetUserlist(usernames);
+	}
 	void Open()
 	{
 		_console = Console;
@@ -63,6 +69,7 @@ public:
 
 		shoryu::prepare_io_service();
 		_session.reset(new session_type());
+		_session->userlist_handler([&](const std::vector<std::string> &usernames) {HandleUsernames(usernames); });
 #ifdef CONNECTION_TEST
 		_session->send_delay_min(40);
 		_session->send_delay_max(80);

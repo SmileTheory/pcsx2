@@ -315,6 +315,13 @@ namespace shoryu
 			try_prepare();
 			m_host = true;
 			m_num_players = 1;
+			if(m_userlist_handler)
+			{
+				std::vector<std::string> list;
+				list.push_back(_username);
+				m_userlist_handler(list);
+			}
+
 			_state = state;
 			_state_check_handler = handler;
 			_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){create_recv_handler(ep, msg);});
@@ -642,6 +649,10 @@ namespace shoryu
 		{
 			_username = name;
 		}
+		inline void userlist_handler(std::function<const void(std::vector<std::string>)> handler)
+		{
+			m_userlist_handler = handler;
+		}
 	protected:
 		void try_prepare()
 		{
@@ -758,6 +769,8 @@ namespace shoryu
 					msg.usernames.push_back(_username);
 					for (auto &ep : m_clientEndpoints)
 						msg.usernames.push_back(_username_map[ep]);
+					if(m_userlist_handler)
+						m_userlist_handler(msg.usernames);
 
 					srand(msg.rand_seed);
 					for(size_t i = 0; i < m_clientEndpoints.size(); i++)
@@ -846,6 +859,8 @@ namespace shoryu
 				_current_state = MessageType::Ready;
 				if(!_state_check_handler(_state, msg.state))
 					_current_state = MessageType::Deny;
+				if(m_userlist_handler)
+					m_userlist_handler(msg.usernames);
 				_connection_cv.notify_all();
 			}
 			if(msg.cmd == MessageType::Deny)
@@ -978,5 +993,7 @@ namespace shoryu
 		std::condition_variable _frame_cond;
 		std::condition_variable _data_cond;
 		data_table _data_table;
+
+		std::function<const void(std::vector<std::string>)> m_userlist_handler;
 	};
 }

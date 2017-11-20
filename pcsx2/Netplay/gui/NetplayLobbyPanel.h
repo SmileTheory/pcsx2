@@ -10,7 +10,8 @@ public:
 
 	void SetInputDelay(int value);
 	int GetInputDelay();
-	void SetReadOnly(bool readonly = true);	
+	void SetReadOnly(bool readonly = true);
+	void SetUserlist(const std::vector<std::string> &usernames);
 
 protected:
 	virtual void OnStart(wxCommandEvent& event);

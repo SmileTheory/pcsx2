@@ -30,4 +30,6 @@ public:
 	virtual int GetInputDelay() = 0;
 	virtual void SetInputDelay(int input_delay) = 0;
 	virtual void SetStatus(const wxString& status) = 0;
+
+	virtual void SetUserlist(const std::vector<std::string> &usernames) = 0;
 };

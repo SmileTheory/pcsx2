@@ -22,6 +22,13 @@ void NetplayLobbyPanel::SetStartHandler(const event_handler_type & handler)
 	m_start_handler = handler;
 }
 
+void NetplayLobbyPanel::SetUserlist(const std::vector<std::string> &usernames)
+{
+	m_playersBox->Clear();
+	for(auto &str : usernames)
+		m_playersBox->Append(wxString::wxString(str));
+}
+
 void NetplayLobbyPanel::OnStart(wxCommandEvent & event)
 {
 	if (m_start_handler)

@@ -22,7 +22,8 @@ namespace shoryu
 		Info, //side, all endpoints, delay
 		Delay, //set delay
 		Ready, //send to eps, after all eps answered - start the game
-		EndSession
+		EndSession,
+		Chat
 	};
 
 	const char *messageTypeNames[] = {
@@ -35,7 +36,8 @@ namespace shoryu
 		"Info  ",
 		"Delay ",
 		"Ready ",
-		"EndSn "
+		"EndSn ",
+		"Chat  "
 	};
 
 
@@ -67,6 +69,7 @@ namespace shoryu
 		T frame;
 		message_data data;
 		std::string username;
+		std::string lobby_message;
 		
 		inline void serialize(shoryu::oarchive& a) const
 		{
@@ -114,6 +117,16 @@ namespace shoryu
 				break;
 			case MessageType::Delay:
 				a << delay;
+				break;
+			case MessageType::Chat:
+				length = username.length();
+				a << length;
+				if (length)
+					a.write((char*)username.c_str(), length);
+				length = lobby_message.length();
+				a << length;
+				a.write((char*)lobby_message.c_str(), length);
+				break;
 			default:
 				break;
 			}
@@ -180,6 +193,20 @@ namespace shoryu
 				break;
 			case MessageType::Delay:
 				a >> delay;
+				break;
+			case MessageType::Chat:
+			{
+				a >> length;
+				std::auto_ptr<char> str(new char[length]);
+				a.read(str.get(), length);
+				username.assign(str.get(), str.get() + length);
+
+				a >> length;
+				str.reset(new char[length]);
+				a.read(str.get(), length);
+				lobby_message.assign(str.get(), str.get() + length);
+			}
+				break;
 			default:
 				break;
 			}
@@ -839,7 +866,7 @@ namespace shoryu
 				m_ready = true;
 				_connection_cv.notify_all();
 			}
-			if(msg.cmd == MessageType::Ping)
+			if (msg.cmd == MessageType::Ping)
 			{
 				message_type msg;
 				msg.cmd = MessageType::None;

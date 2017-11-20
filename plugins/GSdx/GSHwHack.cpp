@@ -471,6 +471,19 @@ bool GSC_ShadowofRome(const GSFrameInfo& fi, int& skip)
 	return true;
 }
 
+bool GSC_SFEX3(const GSFrameInfo& fi, int& skip)
+{
+	if (skip == 0)
+	{
+		if (fi.TME && fi.FBP == 0x00500 && fi.FPSM == PSM_PSMCT16 && fi.TBP0 == 0x00f00 && fi.TPSM == PSM_PSMCT16)
+		{
+			skip = 2; // blur
+		}
+	}
+
+	return true;
+}
+
 bool GSC_TimeSplitters2(const GSFrameInfo& fi, int& skip)
 {
 	if(skip == 0)
@@ -1406,20 +1419,6 @@ bool GSC_SkyGunner(const GSFrameInfo& fi, int& skip)
 	return true;
 }
 
-bool GSC_JamesBondEverythingOrNothing(const GSFrameInfo& fi, int& skip)
-{
-	if(skip == 0)
-	{
-
-		if(fi.TME && (fi.FBP < 0x02000 && !(fi.FBP == 0x0 || fi.FBP == 0x00e00)) && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 > 0x01c00 && fi.TBP0 < 0x03000) && fi.TPSM == PSM_PSMT8)
-		{
-			skip = 1; //Huge Vram usage
-		}
-	}
-
-	return true;
-}
-
 bool GSC_StarWarsBattlefront(const GSFrameInfo& fi, int& skip)
 {
 	if(skip == 0)
@@ -1500,19 +1499,6 @@ bool GSC_MetalGearSolid3(const GSFrameInfo& fi, int& skip)
 			{
 				skip = 136;	//pal
 			}
-		}
-	}
-
-	return true;
-}
-
-bool GSC_SFEX3(const GSFrameInfo& fi, int& skip)
-{
-	if(skip == 0)
-	{
-		if(fi.TME && fi.FBP == 0x00500 && fi.FPSM == PSM_PSMCT16 && fi.TBP0 == 0x00f00 && fi.TPSM == PSM_PSMCT16)
-		{
-			skip = 2; // blur
 		}
 	}
 
@@ -2450,6 +2436,7 @@ void GSState::SetupCrcHack()
 		lut[CRC::Spartan] = GSC_Spartan;
 		lut[CRC::StarWarsForceUnleashed] = GSC_StarWarsForceUnleashed;
 		lut[CRC::SteambotChronicles] = GSC_SteambotChronicles;
+		lut[CRC::SFEX3] = GSC_SFEX3;
 		lut[CRC::TalesOfLegendia] = GSC_TalesOfLegendia;
 		lut[CRC::TalesofSymphonia] = GSC_TalesofSymphonia;
 		lut[CRC::TimeSplitters2] = GSC_TimeSplitters2;
@@ -2502,7 +2489,6 @@ void GSState::SetupCrcHack()
 		lut[CRC::LegoBatman] = GSC_LegoBatman;
 		lut[CRC::OnePieceGrandAdventure] = GSC_OnePieceGrandAdventure;
 		lut[CRC::OnePieceGrandBattle] = GSC_OnePieceGrandBattle;
-		lut[CRC::SFEX3] = GSC_SFEX3;
 		lut[CRC::SpyroEternalNight] = GSC_SpyroEternalNight;
 		lut[CRC::SpyroNewBeginning] = GSC_SpyroNewBeginning;
 		lut[CRC::SonicUnleashed] = GSC_SonicUnleashed;
@@ -2527,7 +2513,6 @@ void GSState::SetupCrcHack()
 
 		// Channel Effect
 		lut[CRC::DeathByDegreesTekkenNinaWilliams] = GSC_DeathByDegreesTekkenNinaWilliams;
-		lut[CRC::JamesBondEverythingOrNothing] = GSC_JamesBondEverythingOrNothing;
 		lut[CRC::MetalGearSolid3] = GSC_MetalGearSolid3; // + accurate blending
 		lut[CRC::SkyGunner] = GSC_SkyGunner;
 		lut[CRC::StarWarsBattlefront2] = GSC_StarWarsBattlefront2;

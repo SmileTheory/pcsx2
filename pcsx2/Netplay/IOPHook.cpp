@@ -36,6 +36,8 @@ namespace
 	int g_pollIndex = -1;
 	int g_hookFrameNum = -1;
 	int g_sendPad = 0;
+	u8 g_vibrationRemap[8][2];
+
 	bool g_active = false;
 #ifdef LOG_IOP
 	std::fstream g_log;
@@ -106,6 +108,8 @@ namespace
 
 	u8 CALLBACK NETPADpoll(u8 value)
 	{
+		int pad = NET_CurrentPad();
+
 		if (g_pollIndex == 0)
 			g_currentCommand = value;
 
@@ -113,12 +117,26 @@ namespace
 		using namespace std;
 		g_log << hex << setw(2) << (int)value << '=';
 #endif
+		if (g_IOPHook && g_currentCommand == 0x42 && g_pollIndex >= 2 && g_pollIndex <= 3)
+		{
+			int remap = g_IOPHook->RemapVibrate(pad);
+
+			g_vibrationRemap[pad][g_pollIndex - 2] = value;
+
+			if (remap == -1)
+			{
+				value = 0;
+			}
+			else if (remap != pad)
+			{
+				// this adds 1 frame of lag if your virtual pad is > your actual pad
+				value = g_vibrationRemap[remap][g_pollIndex - 2];
+			}
+		}
 		value = PADpollBackup(value);
 
 		if (g_IOPHook && g_currentCommand == 0x42)
 		{
-			int pad = NET_CurrentPad();
-
 			if (pad == 0 && g_pollIndex == 0)
 				g_sendPad = 1;
 
@@ -162,6 +180,9 @@ void HookIOP(IOPHook* hook)
 	g_pollIndex = 0;
 	g_hookFrameNum = 0;
 	g_sendPad = 0;
+
+	for (int i = 0; i < 8; i++)
+		g_vibrationRemap[i][0] = g_vibrationRemap[i][1] = 0;
 
 	if(g_active)
 		return;

@@ -365,6 +365,16 @@ public:
 			_replay->Write(side, f);
 		}
 	}
+	int RemapVibrate(int pad)
+	{
+		if (_is_stopped || !_session) return pad;
+
+		// FIXME: use pad input, right now this only remaps pad 0
+		if (pad == 0)
+			return _session->side();
+		else
+			return -1;
+	}
 	u8 HandleIO(int side, int index, u8 value)
 	{
 		if(_is_stopped || !_session) return value;

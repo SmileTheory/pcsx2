@@ -102,6 +102,10 @@ public:
 			Console_SetActiveHandler(_console);
 		});
 	}
+	int RemapVibrate(int pad)
+	{
+		return pad;
+	}
 	u8 HandleIO(int side, int index, u8 value)
 	{
 		if(_replay.Pos() < _replay.Length())

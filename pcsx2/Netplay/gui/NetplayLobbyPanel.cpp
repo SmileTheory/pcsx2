@@ -12,16 +12,14 @@ int NetplayLobbyPanel::GetInputDelay()
 	return this->m_inputDelaySpinner->GetValue();
 }
 
-void NetplayLobbyPanel::SetReadOnly(bool readonly)
+void NetplayLobbyPanel::UpdateHostModeUI(bool host)
 {
-	this->m_inputDelaySpinner->Enable(!readonly);
+	this->m_inputDelaySpinner->Enable(host);
 }
-
 void NetplayLobbyPanel::SetStartHandler(const event_handler_type & handler)
 {
 	m_start_handler = handler;
 }
-
 void NetplayLobbyPanel::SetUserlist(const std::vector<std::string> &usernames)
 {
 	m_playersBox->Clear();
@@ -63,4 +61,12 @@ void NetplayLobbyPanel::OnSendText(wxCommandEvent& event)
 	}
 
 	m_NetplayConsoleEntryTextCtrl->Clear();
+}
+void NetplayLobbyPanel::EnableOnlyChat()
+{
+	m_moveUpButton->Disable();
+	m_moveDownButton->Disable();
+	m_startButton->Disable();
+	m_inputDelayLabel->Disable();
+	m_inputDelaySpinner->Disable();
 }

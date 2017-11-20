@@ -34,10 +34,9 @@ wxPanel* NetplayDialog::GetContent()
 {
 	return m_content;
 }
-void NetplayDialog::SetReadonly(bool readonly)
+void NetplayDialog::EnableOnlyChat()
 {
-	if(m_content)
-		m_content->Enable(!readonly);
+	m_lobbyPanel.EnableOnlyChat();
 }
 void NetplayDialog::EnableCancel(bool enable)
 {

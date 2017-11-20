@@ -985,6 +985,11 @@ namespace shoryu
 					if (m_host || side == 0)
 						send(ep);
 				}
+				if (msg.cmd == MessageType::Chat)
+				{
+					if (m_chatmessage_handler)
+						m_chatmessage_handler(msg.username, msg.lobby_message);
+				}
 			}
 		}
 		void err_hdl(const std::error_code& error)

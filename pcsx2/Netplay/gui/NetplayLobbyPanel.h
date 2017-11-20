@@ -11,9 +11,10 @@ public:
 
 	void SetInputDelay(int value);
 	int GetInputDelay();
-	void SetReadOnly(bool readonly = true);
+	void UpdateHostModeUI(bool host = true);
 	void SetUserlist(const std::vector<std::string> &usernames);
 	void AddChatMessage(const std::string &username, const std::string &message);
+	void EnableOnlyChat();
 protected:
 	virtual void OnStart(wxCommandEvent& event);
 	virtual void OnSendText(wxCommandEvent& event);

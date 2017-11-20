@@ -45,16 +45,19 @@ public:
 	void Initialize()
 	{
 		auto ok_hdl = [&]() {
-			m_dialog->GetContent()->Disable();
 			_operation_success = true;
-			if(_phase == Settings)
+			if (_phase == Settings)
 			{
+				m_dialog->GetContent()->Disable();
 				_phase = Confirmation;
-				if(_settings_ready_handler)
+				if (_settings_ready_handler)
 					_settings_ready_handler();
 			}
 			else
+			{
+				m_dialog->EnableOnlyChat();
 				_cond->notify_one();
+			}
 		};
 		auto close_hdl = [&]() { 
 			try
@@ -140,7 +143,7 @@ public:
 				return;
 			NetplayLobbyPanel& p = m_dialog->GetLobbyPanel();
 			p.SetInputDelay(input_delay);
-			p.SetReadOnly(GetSettings().Mode != HostMode);
+			p.UpdateHostModeUI(GetSettings().Mode == HostMode);
 
 			m_dialog->SetContent(&p);
 		});

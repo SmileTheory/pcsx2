@@ -11,5 +11,9 @@ public:
 	virtual int RemapVibrate(int pad) = 0;
 };
 
+u8 CALLBACK NETPADstartPoll(int port);
+u8 CALLBACK NETPADpoll(u8 value);
+s32 CALLBACK NETPADsetSlot(u8 port, u8 slot);
+
 void HookIOP(IOPHook* hook);
 void UnhookIOP();

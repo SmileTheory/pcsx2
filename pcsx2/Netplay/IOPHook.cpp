@@ -19,17 +19,12 @@ IOPHook* g_IOPHook = 0;
 #define NETPLAY_SYNC_NUM_INPUTS 2
 #endif
 
+#ifdef LOG_IOP
+using namespace std;
+#endif
+
 namespace
 {
-	_PADupdate		   PADupdateBackup;
-	_PADopen           PADopenBackup;
-	_PADstartPoll      PADstartPollBackup;
-	_PADpoll           PADpollBackup;
-	_PADquery          PADqueryBackup;
-	_PADkeyEvent       PADkeyEventBackup;
-	_PADsetSlot        PADsetSlotBackup;
-	_PADqueryMtap      PADqueryMtapBackup;
-	
 	int g_currentCommand = -1;
 	int g_pollPort = -1;
 	int g_pollSlot[2] = {0, 0};
@@ -46,7 +41,6 @@ namespace
 	// port 0 slot 0   -> pad 0
 	// port 1 slot 0-3 -> pad 1-4
 	// port 0 slot 1-3 -> pad 5-7
-
 	int NET_CurrentPad()
 	{
 		int slot = g_pollSlot[g_pollPort];
@@ -56,120 +50,99 @@ namespace
 
 		return g_pollPort;
 	}
+}
 
-	s32 CALLBACK NETPADopen(void *pDsp)
+u8 CALLBACK NETPADstartPoll(int port)
+{
+	if (g_IOPHook && g_sendPad)
 	{
-		return PADopenBackup(pDsp);
+		g_IOPHook->AcceptInput(0);
+		g_sendPad = 0;
 	}
-	u8 CALLBACK NETPADstartPoll(int port)
+
+	g_pollPort = port - 1;
+	g_pollIndex = 0;
+
+	if(NET_CurrentPad() == 0)
 	{
-		if (g_sendPad)
+		if(g_IOPHook && g_currentCommand == 0x42)
 		{
-			g_IOPHook->AcceptInput(0);
-			g_sendPad = 0;
+			if (g_hookFrameNum > 0)
+				g_IOPHook->NextFrame();
+			g_hookFrameNum++;
 		}
-
-		g_pollPort = port - 1;
-		g_pollIndex = 0;
-
-		if(NET_CurrentPad() == 0)
-		{
-			if(g_IOPHook && g_currentCommand == 0x42)
-			{
-				if (g_hookFrameNum > 0)
-					g_IOPHook->NextFrame();
-				g_hookFrameNum++;
-			}
-		}
+	}
 #ifdef LOG_IOP
-		using namespace std;
-		g_log << endl << setw(8) << (int)g_hookFrameNum << ": ";
-		g_log << setw(2) << (int)port << '-' << setw(2) << (int)g_pollSlot[g_pollPort];
-		g_log << " (" << setw(2) << NET_CurrentPad() << ") : ";
+	g_log << endl << setw(8) << (int)g_hookFrameNum << ": ";
+	g_log << setw(1) << (int)port << '-' << setw(1) << (int)g_pollSlot[g_pollPort];
+	g_log << " (" << setw(1) << NET_CurrentPad() << ") : ";
 #endif
-		return PADstartPollBackup(port);
-	}
-	u32 CALLBACK NETPADquery(int pad)
-	{
-		return PADqueryBackup(pad);
-	}
-	keyEvent* CALLBACK NETPADkeyEvent()
-	{
-		return PADkeyEventBackup();
-	}
-	s32 CALLBACK NETPADqueryMtap(u8 port)
-	{
-		return PADqueryMtapBackup(port);
-	}
-	void CALLBACK NETPADupdate(int pad)
-	{
-		return PADupdateBackup(pad);
-	}
+	return PADstartPoll(port);
+}
 
-	u8 CALLBACK NETPADpoll(u8 value)
-	{
-		int pad = NET_CurrentPad();
+u8 CALLBACK NETPADpoll(u8 value)
+{
+	int pad = NET_CurrentPad();
 
-		if (g_pollIndex == 0)
-			g_currentCommand = value;
+	if (g_pollIndex == 0)
+		g_currentCommand = value;
 
 #ifdef LOG_IOP
-		using namespace std;
-		g_log << hex << setw(2) << (int)value << '=';
+	g_log << hex << setw(2) << (int)value << '=';
 #endif
-		if (g_IOPHook && g_currentCommand == 0x42 && g_pollIndex >= 2 && g_pollIndex <= 3)
-		{
-			int remap = g_IOPHook->RemapVibrate(pad);
-
-			g_vibrationRemap[pad][g_pollIndex - 2] = value;
-
-			if (remap == -1)
-			{
-				value = 0;
-			}
-			else if (remap != pad)
-			{
-				// this adds 1 frame of lag if your virtual pad is > your actual pad
-				value = g_vibrationRemap[remap][g_pollIndex - 2];
-			}
-		}
-		value = PADpollBackup(value);
-
-		if (g_IOPHook && g_currentCommand == 0x42)
-		{
-			if (pad == 0 && g_pollIndex == 0)
-				g_sendPad = 1;
-
-			if (g_pollIndex < 2)
-			{
-				// nothing
-			}
-			else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
-			{
-				value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
-			}
-			else if (g_pollIndex > 3 && g_pollIndex < 8)
-			{
-				value = 0x7f;
-			}
-			else
-			{
-				value = 0xff;
-			}
-		}
-#ifdef LOG_IOP
-		g_log << hex << setw(2) << (int)value << ' ';
-#endif
-		g_pollIndex++;
-		return value;
-	}
-	s32 CALLBACK NETPADsetSlot(u8 port, u8 slot)
+	if (g_IOPHook && g_currentCommand == 0x42 && g_pollIndex >= 2 && g_pollIndex <= 3)
 	{
-		g_pollPort = port - 1;
-		g_pollSlot[g_pollPort] = slot - 1;
+		int remap = g_IOPHook->RemapVibrate(pad);
 
-		return PADsetSlotBackup(port, slot);
+		g_vibrationRemap[pad][g_pollIndex - 2] = value;
+
+		if (remap == -1)
+		{
+			value = 0;
+		}
+		else if (remap != pad)
+		{
+			// this adds 1 frame of lag if your virtual pad is > your actual pad
+			value = g_vibrationRemap[remap][g_pollIndex - 2];
+		}
 	}
+	value = PADpoll(value);
+
+	if (g_IOPHook && g_currentCommand == 0x42)
+	{
+		if (pad == 0 && g_pollIndex == 0)
+			g_sendPad = 1;
+
+		if (g_pollIndex < 2)
+		{
+			// nothing
+		}
+		else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+		{
+			value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
+		}
+		else if (g_pollIndex > 3 && g_pollIndex < 8)
+		{
+			value = 0x7f;
+		}
+		else
+		{
+			value = 0xff;
+		}
+	}
+#ifdef LOG_IOP
+	g_log << hex << setw(2) << (int)value << ' ';
+#endif
+	g_pollIndex++;
+	return value;
+}
+
+s32 CALLBACK NETPADsetSlot(u8 port, u8 slot)
+{
+	g_pollPort = port - 1;
+	g_pollSlot[g_pollPort] = slot - 1;
+
+	return PADsetSlot(port, slot);
 }
 
 void HookIOP(IOPHook* hook)
@@ -197,25 +170,6 @@ void HookIOP(IOPHook* hook)
 	g_log.open(filename, std::ios_base::trunc | std::ios_base::out);
 	g_log.fill('0');
 #endif
-
-
-	PADopenBackup = PADopen;
-	PADstartPollBackup = PADstartPoll;
-	PADpollBackup = PADpoll;
-	PADqueryBackup = PADquery;
-	PADkeyEventBackup = PADkeyEvent;
-	PADsetSlotBackup = PADsetSlot;
-	PADqueryMtapBackup = PADqueryMtap;
-	PADupdateBackup = PADupdate;
-		
-	PADopen = NETPADopen;
-	PADstartPoll = NETPADstartPoll;
-	PADpoll = NETPADpoll;
-	PADquery = NETPADquery;
-	PADkeyEvent = NETPADkeyEvent;
-	PADsetSlot = NETPADsetSlot;
-	PADqueryMtap = NETPADqueryMtap;
-	PADupdate = NETPADupdate;
 }
 
 void UnhookIOP()
@@ -224,13 +178,5 @@ void UnhookIOP()
 #ifdef LOG_IOP
 	g_log.close();
 #endif
-	PADopen = PADopenBackup;
-	PADstartPoll = PADstartPollBackup;
-	PADpoll = PADpollBackup;
-	PADquery = PADqueryBackup;
-	PADkeyEvent = PADkeyEventBackup;
-	PADsetSlot = PADsetSlotBackup;
-	PADqueryMtap = PADqueryMtapBackup;
-	PADupdate = PADupdateBackup;
 	g_active = false;
 }

@@ -15,6 +15,7 @@
 
 #include "PrecompiledHeader.h"
 #include "IopCommon.h"
+#include "Netplay/IOPHook.h"
 
 #include "Sio.h"
 #include "sio_internal.h"
@@ -200,11 +201,11 @@ SIO_WRITE sioWriteController(u8 data)
 		byteCnt = 0; //hope this gets only cleared on the first byte...
 		SIO_STAT_READY();
 		DEVICE_PLUGGED();
-		sio.buf[0] = PADstartPoll(sio.port + 1);
+		sio.buf[0] = NETPADstartPoll(sio.port + 1);
 		break;
 
 	default:
-		sio.buf[sio.bufCount] = PADpoll(data);
+		sio.buf[sio.bufCount] = NETPADpoll(data);
 		break;
 	}
 	//Console.WriteLn( "SIO: sent = %02X  From pad data =  %02X  bufCnt %08X ", data, sio.buf[sio.bufCount], sio.bufCount);
@@ -274,7 +275,7 @@ SIO_WRITE sioWriteMultitap(u8 data)
 			{
 				sio.slot[sio.port] = data;
 
-				u32 ret = PADsetSlot(sio.port+1, data+1);
+				u32 ret = NETPADsetSlot(sio.port+1, data+1);
 				sio.buf[5] = ret? data : 0xFF;
 				sio.buf[6] = ret? 0x5A : 0x66;
 			}

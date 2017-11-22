@@ -252,6 +252,47 @@ namespace shoryu
 			_async.stop();
 		}
 
+		void ping_clients()
+		{
+			while(m_ping_clients)
+			{
+				{
+					std::unique_lock<std::mutex> lock(_connection_mutex);
+
+					int old_player_num = m_num_players;
+
+					// kick anyone whom we last received a message from over 5 seconds ago
+					for (auto i_ep = m_clientEndpoints.begin(); i_ep != m_clientEndpoints.end();)
+					{
+						if (_async.peer(*i_ep).recv_time + 5000 < time_ms())
+						{
+#ifdef SHORYU_ENABLE_LOG
+							log << "[" << time_ms() - log_start << "] kicking " << zed_net_host_to_str(i_ep->host) << ":" << i_ep->port << "\n";
+#endif
+							m_num_players--;
+							m_clientEndpoints.erase(i_ep);
+						}
+						else
+							i_ep++;
+					}
+
+					// requeue info if player numbers changed
+					if (old_player_num != m_num_players)
+						queue_info();
+
+					// queue pings to everyone
+					if (m_num_players)
+					{
+						message_type msg(MessageType::Ping);
+						queue_message(msg);
+					}
+
+					send();
+				}
+				std::this_thread::sleep_for(std::chrono::seconds(1));
+			}
+		}
+
 		bool wait_for_start()
 		{
 			if (m_host)
@@ -301,6 +342,16 @@ namespace shoryu
 			if (_current_state != MessageType::Ready)
 				return false;
 
+			if (m_host)
+			{
+				m_ping_clients = false;
+				if (m_ping_thread && m_ping_thread->joinable())
+				{
+					m_ping_thread->join();
+					m_ping_thread.reset();
+				}
+			}
+
 			while (send())
 				std::this_thread::sleep_for(std::chrono::milliseconds(17));
 
@@ -326,8 +377,6 @@ namespace shoryu
 			_state_check_handler = handler;
 			_async.receive_handler([&](const zed_net_address_t& ep, message_type& msg){create_recv_handler(ep, msg);});
 			bool connected = true;
-			create_handler();
-
 			if(create_handler() && _current_state != MessageType::None)
 			{
 				//connection_established();
@@ -434,6 +483,30 @@ namespace shoryu
 
 			queue_message(msg);
 			send();
+		}
+
+		inline void queue_info()
+		{
+			message_type msg(MessageType::Info);
+			msg.rand_seed = (uint32_t)time(0);
+			msg.state = _state;
+			msg.num_players = m_num_players;
+			msg.usernames.push_back(_username);
+			for (auto &ep : m_clientEndpoints)
+				msg.usernames.push_back(_username_map[ep]);
+			if (m_userlist_handler)
+				m_userlist_handler(msg.usernames);
+
+			srand(msg.rand_seed);
+			for (size_t i = 0; i < m_clientEndpoints.size(); i++)
+			{
+				auto &ep = m_clientEndpoints[i];
+				msg.side = i + 1;
+				_async.queue(ep, msg);
+#ifdef SHORYU_ENABLE_LOG
+				log << "[" << time_ms() - log_start << "] Info --^ " << zed_net_host_to_str(ep.host) << ":" << ep.port << "\n";
+#endif
+			}
 		}
 
 		inline void queue_data(message_data& data)
@@ -690,6 +763,12 @@ namespace shoryu
 			_data_table.clear();
 			_async.error_handler(std::function<void(const std::error_code&)>());
 			_async.receive_handler(std::function<void(const zed_net_address_t&, message_type&)>());
+			m_ping_clients = false;
+			if (m_ping_thread && m_ping_thread->joinable())
+			{
+				m_ping_thread->join();
+				m_ping_thread.reset();
+			}
 		}
 		void connection_established()
 		{
@@ -739,6 +818,8 @@ namespace shoryu
 		bool create_handler()
 		{
 			_current_state = MessageType::Ready;
+			m_ping_clients = true;
+			m_ping_thread.reset(new std::thread(&session::ping_clients, this));
 			return true;
 		}
 		void create_recv_handler(const zed_net_address_t& ep, message_type& msg)
@@ -775,28 +856,7 @@ namespace shoryu
 
 				if (m_num_players)
 				{
-					message_type msg;
-					msg.cmd = MessageType::Info;
-					msg.rand_seed = (uint32_t)time(0);
-					//msg.eps = ready_list;
-					msg.state = _state;
-					msg.num_players = m_num_players;
-					msg.usernames.push_back(_username);
-					for (auto &ep : m_clientEndpoints)
-						msg.usernames.push_back(_username_map[ep]);
-					if(m_userlist_handler)
-						m_userlist_handler(msg.usernames);
-
-					srand(msg.rand_seed);
-					for(size_t i = 0; i < m_clientEndpoints.size(); i++)
-					{
-						auto &ep2 = m_clientEndpoints[i];
-						msg.side = i + 1;
-						_async.queue(ep2, msg);
-#ifdef SHORYU_ENABLE_LOG
-						log << "[" << time_ms() - log_start << "] Info --^ " << zed_net_host_to_str(ep2.host) << ":" << ep2.port << "\n";
-#endif
-					}
+					queue_info();
 					send();
 					_side = 0;
 				}
@@ -1025,5 +1085,7 @@ namespace shoryu
 		data_table _data_table;
 
 		std::function<const void(std::vector<std::string>)> m_userlist_handler;
+		std::unique_ptr<std::thread> m_ping_thread;
+		bool m_ping_clients;
 	};
 }

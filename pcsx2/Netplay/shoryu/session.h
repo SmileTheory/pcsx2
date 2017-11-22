@@ -342,20 +342,16 @@ namespace shoryu
 			if (_current_state != MessageType::Ready)
 				return false;
 
-			if (m_host)
-			{
-				m_ping_clients = false;
-				if (m_ping_thread && m_ping_thread->joinable())
-				{
-					m_ping_thread->join();
-					m_ping_thread.reset();
-				}
-			}
-
-			while (send())
-				std::this_thread::sleep_for(std::chrono::milliseconds(17));
-
+			// switch to new handlers
 			connection_established();
+
+			// stop ping thread
+			m_ping_clients = false;
+			if (m_ping_thread && m_ping_thread->joinable())
+			{
+				m_ping_thread->join();
+				m_ping_thread.reset();
+			}
 
 			return true;
 		}

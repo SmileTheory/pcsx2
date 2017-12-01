@@ -117,7 +117,8 @@ u8 CALLBACK NETPADpoll(u8 value)
 		{
 			// nothing
 		}
-		else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS)
+		// FIXME: translate digital buttons to appropriate analog values
+		else if (g_pollIndex <= 1 + NETPLAY_SYNC_NUM_INPUTS && g_pollIndex < 8)
 		{
 			value = g_IOPHook->HandleIO(pad, g_pollIndex - 2, value);
 		}

@@ -886,7 +886,7 @@ namespace shoryu
 			msec start_time = time_ms();
 			std::unique_lock<std::mutex> lock(_connection_mutex);
 			auto pred = [&](){
-				return _current_state == MessageType::Ready;
+				return _current_state != MessageType::None;
 			};
 
 			do

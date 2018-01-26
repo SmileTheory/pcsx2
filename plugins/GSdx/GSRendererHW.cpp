@@ -56,8 +56,9 @@ GSRendererHW::GSRendererHW(GSTextureCache* tc)
 	}
 
 	if (m_upscale_multiplier == 1) { // hacks are only needed for upscaling issues.
-		m_userhacks_round_sprite_offset = 0;
-		m_userhacks_align_sprite_X      = 0;
+		m_userhacks_round_sprite_offset  = 0;
+		m_userhacks_align_sprite_X       = false;
+		m_userHacks_merge_sprite         = false;
 	}
 
 	m_dump_root = root_hw;
@@ -194,6 +195,7 @@ void GSRendererHW::SetGameCRC(uint32 crc, int options)
 		case CRC::AceCombat4:
 		case CRC::AceCombat5:
 		case CRC::BrianLaraInternationalCricket:
+		case CRC::DarkCloud:
 		case CRC::DestroyAllHumans:
 		case CRC::DestroyAllHumans2:
 		case CRC::FIFA03:

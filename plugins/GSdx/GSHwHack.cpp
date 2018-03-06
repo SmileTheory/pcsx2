@@ -58,11 +58,17 @@ bool GSC_DBZBT2(const GSFrameInfo& fi, int& skip)
 	{
 		if(fi.TME && /*fi.FBP == 0x00000 && fi.FPSM == PSM_PSMCT16 &&*/ (fi.TBP0 == 0x01c00 || fi.TBP0 == 0x02000) && fi.TPSM == PSM_PSMZ16)
 		{
-			if (Dx_only) // Feel like texture shuffle but not sure
-				skip = 26; //27
+			// Alpha channel (red line issue has been fixed).
+			// Sky texture (Depth) is properly rendered on OpenGL only for the NTSC version. The PAL version still has some issues (half screen bottom issue).
+			if (g_crc_region == CRC::EU || Dx_only)
+			{
+				skip = 26;
+			}
 		}
 		else if(!fi.TME && (fi.FBP == 0x02a00 || fi.FBP == 0x03000) && fi.FPSM == PSM_PSMCT16)
 		{
+			// Character outlines.
+			// Glow/blur effect. Causes ghosting on upscaled resolution.
 			skip = 10;
 		}
 	}
@@ -211,16 +217,16 @@ bool GSC_Spartan(const GSFrameInfo& fi, int& skip)
 		}
 		else
 		{
-				if(fi.TME)
+			if(fi.TME)
+			{
+				// depth textures (bully, mgs3s1 intro, Front Mission 5)
+				if( (fi.TPSM == PSM_PSMZ32 || fi.TPSM == PSM_PSMZ24 || fi.TPSM == PSM_PSMZ16 || fi.TPSM == PSM_PSMZ16S) ||
+					// General, often problematic post processing
+					(GSUtil::HasSharedBits(fi.FBP, fi.FPSM, fi.TBP0, fi.TPSM)) )
 				{
-					// depth textures (bully, mgs3s1 intro, Front Mission 5)
-					if( (fi.TPSM == PSM_PSMZ32 || fi.TPSM == PSM_PSMZ24 || fi.TPSM == PSM_PSMZ16 || fi.TPSM == PSM_PSMZ16S) ||
-						// General, often problematic post processing
-						(GSUtil::HasSharedBits(fi.FBP, fi.FPSM, fi.TBP0, fi.TPSM)) )
-					{
-						skip = 1;
-					}
+					skip = 1;
 				}
+			}
 		}
 	}
 
@@ -231,7 +237,7 @@ bool GSC_IkkiTousen(const GSFrameInfo& fi, int& skip)
 {
 	if(skip == 0)
 	{
-		if(fi.TME && fi.FBP == 0x00a80 && fi.FPSM == PSM_PSMZ24 && fi.TBP0 == 0x01180 && fi.TPSM == PSM_PSMZ24)
+		if(Dx_only && fi.TME && fi.FBP == 0x00a80 && fi.FPSM == PSM_PSMZ24 && fi.TBP0 == 0x01180 && fi.TPSM == PSM_PSMZ24)
 		{
 			skip = 1000; // shadow (result is broken without depth copy, also includes 16 bit)
 		}
@@ -242,7 +248,7 @@ bool GSC_IkkiTousen(const GSFrameInfo& fi, int& skip)
 	}
 	else if(skip > 7)
 	{
-		if(fi.TME && fi.FBP == 0x00700 && fi.FPSM == PSM_PSMCT16 && fi.TBP0 == 0x00700 && fi.TPSM == PSM_PSMCT16)
+		if(Dx_only && fi.TME && fi.FBP == 0x00700 && fi.FPSM == PSM_PSMCT16 && fi.TBP0 == 0x00700 && fi.TPSM == PSM_PSMCT16)
 		{
 			skip = 7; // the last steps of shadow drawing
 		}
@@ -285,9 +291,6 @@ bool GSC_Genji(const GSFrameInfo& fi, int& skip)
 			skip = 1;
 		}
 	}
-	else
-	{
-	}
 
 	return true;
 }
@@ -311,9 +314,9 @@ bool GSC_CaptainTsubasa(const GSFrameInfo& fi, int& skip)
 	if(skip == 0)
 	{
 		if(fi.TME && fi.FBP == 0x1C00 && !fi.FBMSK)
-			{
-				skip = 1;
-			}
+		{
+			skip = 1;
+		}
 	}
 	return true;
 }
@@ -1266,37 +1269,9 @@ bool GSC_ICO(const GSFrameInfo& fi, int& skip)
 	return true;
 }
 
-bool GSC_GT4(const GSFrameInfo& fi, int& skip)
-{
-	// Game requires to extract source from RT (block boundary) (texture cache limitation)
-	if(skip == 0)
-	{
-		if(Aggressive)
-		{
-			// Removes layer obscuring the screen when the in-game brightness or contrast setting is set to any value but 0.
-			// The hack can cause VRAM/RAM spikes when both brightness and contrast settings are set to 0.
-			if(fi.TME && fi.FBP >= 0x02f00 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 == 0x00000 || fi.TBP0 == 0x01180 /*|| fi.TBP0 == 0x01a40*/) && fi.TPSM == PSM_PSMT8) //TBP0 0x1a40 progressive
-			{
-			skip = 770;	// ntsc, progressive 1540
-			}
-			if(g_crc_region == CRC::EU && fi.TME && fi.FBP >= 0x03400 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 == 0x00000 || fi.TBP0 == 0x01400 ) && fi.TPSM == PSM_PSMT8)
-			{
-			skip = 880;	// pal
-			}
-		}
-		else if(fi.TME && (fi.FBP == 0x00000 || fi.FBP == 0x01400) && fi.FPSM == PSM_PSMCT24 && fi.TBP0 >= 0x03420 && fi.TPSM == PSM_PSMT8)
-		{
-			// TODO: removes gfx from where it is not supposed to (garage)
-			// skip = 58;
-		}
-	}
-
-	return true;
-}
-
 bool GSC_GT3(const GSFrameInfo& fi, int& skip)
 {
-	// Same issue as GSC_GT4 ???
+	// Same issue as GT4??? The GT4 hack removed layer obscuring the screen when the in-game brightness or contrast setting is set to any value but 0.
 	if(skip == 0)
 	{
 		if(fi.TME && fi.FBP >= 0x02de0 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 == 0x00000 || fi.TBP0 == 0x01180) && fi.TPSM == PSM_PSMT8)
@@ -1310,29 +1285,12 @@ bool GSC_GT3(const GSFrameInfo& fi, int& skip)
 
 bool GSC_GTConcept(const GSFrameInfo& fi, int& skip)
 {
-	// Same issue as GSC_GT4 ???
+	// Same issue as GSC_GT3/GT4 ???
 	if(skip == 0)
 	{
 		if(fi.TME && fi.FBP >= 0x03420 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 == 0x00000 || fi.TBP0 == 0x01400) && fi.TPSM == PSM_PSMT8)
 		{
 			skip = 880;
-		}
-	}
-
-	return true;
-}
-
-bool GSC_TouristTrophy(const GSFrameInfo& fi, int& skip)
-{
-	if(skip == 0)
-	{
-		if(fi.TME && fi.FBP >= 0x02f00 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 == 0x00000 || fi.TBP0 == 0x01180) && fi.TPSM == PSM_PSMT8)
-		{
-			skip = 770;
-		}
-		if(fi.TME && fi.FBP >= 0x02de0 && fi.FPSM == PSM_PSMCT32 && (fi.TBP0 ==0 || fi.TBP0==0x1a40 ||fi.TBP0 ==0x2300) && fi.TPSM == PSM_PSMT8)
-		{
-			skip = 770; //480P
 		}
 	}
 
@@ -2422,8 +2380,6 @@ void GSState::SetupCrcHack()
 		lut[CRC::StarWarsBattlefront2] = GSC_StarWarsBattlefront2;
 		lut[CRC::StarWarsBattlefront] = GSC_StarWarsBattlefront;
 		// Dedicated shader for channel effect
-		lut[CRC::TouristTrophy] = GSC_TouristTrophy;
-		lut[CRC::GT4] = GSC_GT4;
 		lut[CRC::GT3] = GSC_GT3;
 		lut[CRC::GTConcept] = GSC_GTConcept;
 		lut[CRC::TalesOfAbyss] = GSC_TalesOfAbyss;

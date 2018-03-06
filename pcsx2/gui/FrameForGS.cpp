@@ -421,7 +421,6 @@ void GSPanel::AppStatusEvent_OnSettingsApplied()
 	if( IsBeingDeleted() ) return;
 	DoResize();
 	DoShowMouse();
-	Show( !EmuConfig.GS.DisableOutput );
 }
 
 void GSPanel::OnLeftDclick(wxMouseEvent& evt)
@@ -447,15 +446,9 @@ GSFrame::GSFrame( const wxString& title)
 	SetIcons( wxGetApp().GetIconBundle() );
 	SetBackgroundColour( *wxBLACK );
 
-	wxStaticText* label = new wxStaticText( this, wxID_ANY, _("GS Output is Disabled!") );
-	m_id_OutputDisabled = label->GetId();
-	label->SetFont( pxGetFixedFont( 20, wxFONTWEIGHT_BOLD ) );
-	label->SetForegroundColour( *wxWHITE );
-
 	AppStatusEvent_OnSettingsApplied();
 
 	GSPanel* gsPanel = new GSPanel( this );
-	gsPanel->Show( !EmuConfig.GS.DisableOutput );
 	m_id_gspanel = gsPanel->GetId();
 
 	// TODO -- Implement this GS window status window!  Whee.
@@ -504,12 +497,6 @@ bool GSFrame::ShowFullScreen(bool show, bool updateConfig)
 }
 
 
-
-wxStaticText* GSFrame::GetLabel_OutputDisabled() const
-{
-	return (wxStaticText*)FindWindowById( m_id_OutputDisabled );
-}
-
 void GSFrame::CoreThread_OnResumed()
 {
 	m_timer_UpdateTitle.Start( TitleBarUpdateMs );
@@ -544,12 +531,8 @@ bool GSFrame::Show( bool shown )
 			m_id_gspanel = gsPanel->GetId();
 		}
 
-		gsPanel->Show( !EmuConfig.GS.DisableOutput );
 		gsPanel->DoResize();
 		gsPanel->SetFocus();
-
-		if( wxStaticText* label = GetLabel_OutputDisabled() )
-			label->Show( EmuConfig.GS.DisableOutput );
 
 		if( !m_timer_UpdateTitle.IsRunning() )
 			m_timer_UpdateTitle.Start( TitleBarUpdateMs );
@@ -577,9 +560,6 @@ void GSFrame::AppStatusEvent_OnSettingsApplied()
 		if( IsShown() && !CorePlugins.IsOpen(PluginId_GS) )
 			Show( false );
 	}
-
-	if( wxStaticText* label = GetLabel_OutputDisabled() )
-		label->Show( EmuConfig.GS.DisableOutput );
 }
 
 GSPanel* GSFrame::GetViewport()
@@ -715,9 +695,6 @@ void GSFrame::OnResize( wxSizeEvent& evt )
 	{
 		g_Conf->GSWindow.WindowSize	= GetClientSize();
 	}
-
-	if( wxStaticText* label = GetLabel_OutputDisabled() )
-		label->CentreOnParent();
 
 	if( GSPanel* gsPanel = GetViewport() )
 	{

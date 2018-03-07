@@ -404,13 +404,7 @@ public:
 			{
 				{
 					recursive_lock lock(_mutex);
-					if(!_session)
-					{
-						lock.unlock();
-						Stop();
-						break;
-					}
-					if(_session->end_session_request())
+					if(!_session || _session->end_session_request())
 					{
 						lock.unlock();
 						Stop();

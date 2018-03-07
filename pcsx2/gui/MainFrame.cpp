@@ -594,18 +594,17 @@ void MainEmuFrame::ApplyCoreStatus()
 {
 	wxMenuBar& menubar( *GetMenuBar() );
 
-	wxMenuItem* susres = menubar.FindItem(MenuId_Sys_SuspendResume);
-	wxMenuItem* net = menubar.FindItem(MenuId_Boot_Net);
-	wxMenuItem* replay = menubar.FindItem(MenuId_Boot_Replay);
-
 	// [TODO] : Ideally each of these items would bind a listener instance to the AppCoreThread
 	// dispatcher, and modify their states accordingly.  This is just a hack (for now) -- air
 
-	bool vm = SysHasValidState();
-
-	if (susres && !g_Conf->Netplay.IsEnabled && !g_Conf->Replay.IsEnabled)
+	if (wxMenuItem* susres = menubar.FindItem(MenuId_Sys_SuspendResume))
 	{
-		if( !CoreThread.IsClosing() )
+		if( g_Conf->Netplay.IsEnabled || g_Conf->Replay.IsEnabled )
+		{
+			susres->SetItemLabel(_("Pause/Resume"));
+			susres->SetHelp(_("Online/Replay is active; cannot suspend or resume."));
+		}
+		else if( !CoreThread.IsClosing() )
 		{
 			susres->Enable();
 			susres->SetItemLabel(_("Paus&e"));
@@ -666,9 +665,10 @@ void MainEmuFrame::ApplyCoreStatus()
 			m_menuSys.Insert(1, fastboot_id, label, help_text);
 		}
 	}
-	if( net )
+
+	if (wxMenuItem *net = menubar.FindItem(MenuId_Boot_Net))
 	{
-		if( vm )
+		if( SysHasValidState() )
 		{
 			net->SetItemLabel(_("Reboot Netplay"));
 			net->SetHelp(_(""));
@@ -679,7 +679,8 @@ void MainEmuFrame::ApplyCoreStatus()
 			net->SetHelp(_(""));
 		}
 	}
-	if( replay )
+
+	if (wxMenuItem *replay = menubar.FindItem(MenuId_Boot_Replay))
 	{
 		replay->SetItemLabel(_("Open Replay"));
 		replay->SetHelp(_(""));

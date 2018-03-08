@@ -100,6 +100,9 @@ void Utilities::DispatchEvent()
 	if(_dispatch_event)
 		_dispatch_event();
 }
+
+// Execute given function on main thread
+// This is synchronous, so don't have to worry about dangling references
 void Utilities::ExecuteOnMainThread(const std::function<void()>& evt)
 {
 	if(!evt)

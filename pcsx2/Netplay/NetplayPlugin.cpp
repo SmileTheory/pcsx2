@@ -40,28 +40,25 @@ public:
 	}
 	void Open()
 	{
-		_console = Console;
-		Utilities::ExecuteOnMainThread([&] { Console_SetActiveHandler(ConsoleWriter_Null); });
 		_dialog = INetplayDialog::GetInstance();
 		_is_stopped = false;
-		_ready_to_print_error_check = [&]() { return !_is_initialized; };
 		NetplaySettings& settings = g_Conf->Netplay;
 		if( settings.HostPort <= 0 || settings.HostPort > 65535 )
 		{
 			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid host port: %u."), settings.HostPort), _ready_to_print_error_check);
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid host port: %u."), settings.HostPort));
 			return;
 		}
 		if (settings.ListenPort <= 0 || settings.ListenPort > 65535)
 		{
 			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid listen port: %u."), settings.ListenPort), _ready_to_print_error_check);
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Invalid listen port: %u."), settings.ListenPort));
 			return;
 		}
 		if( settings.Mode == ConnectMode && settings.HostAddress.Len() == 0 )
 		{
 			Stop();
-			ConsoleErrorMT(wxT("NETPLAY: Invalid hostname."), _ready_to_print_error_check);
+			ConsoleErrorMT(wxT("NETPLAY: Invalid hostname."));
 			return;
 		}
 		recursive_lock lock(_mutex);
@@ -114,7 +111,7 @@ public:
 		{
 			lock.unlock();
 			Stop();
-			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Unable to bind port %u."), localPort), _ready_to_print_error_check);
+			ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Unable to bind port %u."), localPort));
 		}
 	}
 	bool IsInit()
@@ -171,59 +168,29 @@ public:
 		Utilities::ExecuteOnMainThread([&]() {
 			UI_EnableEverything();
 		});
-		Utilities::ExecuteOnMainThread([&] { Console_SetActiveHandler(_console); });
 	}
-	void ConsoleInfoMT(const wxString& message, std::function<bool()> check = std::function<bool()>())
+
+	void ConsoleInfoMT(const wxString& message)
 	{
-		if(!check)
-		{
-			Utilities::ExecuteOnMainThread([&]() {
-				_console.WriteLn(Color_StrongGreen, message);
-			});
-		}
-		else
-		{
-			std::thread t([=]() {
-				while(!check()) shoryu::sleep(100);
-				ConsoleInfoMT(message);
-			});
-			t.detach();
-		}
+		Utilities::ExecuteOnMainThread([&]() {
+			Console.WriteLn(Color_StrongGreen, message);
+		});
 	}
-	void ConsoleErrorMT(const wxString& message, std::function<bool()> check = std::function<bool()>())
+
+	void ConsoleErrorMT(const wxString& message)
 	{
-		if(!check)
-		{
-			Utilities::ExecuteOnMainThread([&]() {
-				_console.Error(message);
-			});
-		}
-		else
-		{
-			std::thread t([=]() {
-				while(!check()) shoryu::sleep(100);
-				ConsoleErrorMT(message);
-			});
-			t.detach();
-		}
+		Utilities::ExecuteOnMainThread([&]() {
+			Console.Error(message);
+		});
 	}
-	void ConsoleWarningMT(const wxString& message, std::function<bool()> check = std::function<bool()>())
+
+	void ConsoleWarningMT(const wxString& message)
 	{
-		if(!check)
-		{
-			Utilities::ExecuteOnMainThread([&]() {
-				_console.Warning(message);
-			});
-		}
-		else
-		{
-			std::thread t([=]() {
-				while(!check()) shoryu::sleep(100);
-				ConsoleWarningMT(message);
-			});
-			t.detach();
-		}
+		Utilities::ExecuteOnMainThread([&]() {
+			Console.Warning(message);
+		});
 	}
+
 	bool Connect(const wxString& ip, unsigned short port, int timeout)
 	{
 		std::unique_lock<std::mutex> connection_lock(_connection_mutex);
@@ -349,7 +316,7 @@ public:
 		_session->next_frame();
 		/*if(_session->last_error().length())
 		{
-			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(_session->last_error().c_str(), wxConvLocal), _ready_to_print_error_check);
+			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(_session->last_error().c_str(), wxConvLocal));
 			_session->last_error("");
 		}*/
 		if(_state == SSReady)
@@ -373,7 +340,7 @@ public:
 		catch(std::exception& e)
 		{
 			Stop();
-			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(e.what(), wxConvLocal) + wxT(". Interrupting session."), _ready_to_print_error_check);
+			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(e.what(), wxConvLocal) + wxT(". Interrupting session."));
 		}
 		if(_replay)
 		{
@@ -427,7 +394,7 @@ public:
 		{
 			auto frame = _session->frame();
 			Stop();
-			ConsoleWarningMT(wxString::Format(wxT("NETPLAY: Session ended on frame %d."), (int)frame), _ready_to_print_error_check);
+			ConsoleWarningMT(wxString::Format(wxT("NETPLAY: Session ended on frame %d."), (int)frame));
 		}
 		if(_is_stopped || !_session) return value;
 
@@ -458,7 +425,7 @@ public:
 				{
 					auto frame = _session->frame();
 					Stop();
-					ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Timeout on frame %d."), (int)frame), _ready_to_print_error_check);
+					ConsoleErrorMT(wxString::Format(wxT("NETPLAY: Timeout on frame %d."), (int)frame));
 					break;
 				}
 #ifdef CONNECTION_TEST
@@ -469,7 +436,7 @@ public:
 		catch(std::exception& e)
 		{
 			Stop();
-			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(e.what(), wxConvLocal), _ready_to_print_error_check /* 3000 */);
+			ConsoleErrorMT(wxT("NETPLAY: ") + wxString(e.what(), wxConvLocal));
 		}
 		value = frame.input[index];
 		return value;
@@ -483,7 +450,7 @@ protected:
 	{
 		if(memcmp(s1.biosVersion, s2.biosVersion, sizeof(s1.biosVersion)))
 		{
-			ConsoleErrorMT(wxT("NETPLAY: Bios version mismatch."), _ready_to_print_error_check);
+			ConsoleErrorMT(wxT("NETPLAY: Bios version mismatch."));
 			return false;
 		}
 		if(memcmp(s1.discId, s2.discId, sizeof(s1.discId)))
@@ -511,12 +478,12 @@ protected:
 
 			ConsoleErrorMT(wxT("NETPLAY: You are trying to boot different games: ") + 
 				Utilities::GetDiscNameById(s1discId) + wxT(" and ") + 
-				Utilities::GetDiscNameById(s2discId), _ready_to_print_error_check);
+				Utilities::GetDiscNameById(s2discId));
 			return false;
 		}
 		if(s1.skipMpeg != s2.skipMpeg)
 		{
-			ConsoleErrorMT(wxT("NETPLAY: SkipMpegHack settings mismatch."), _ready_to_print_error_check);
+			ConsoleErrorMT(wxT("NETPLAY: SkipMpegHack settings mismatch."));
 			return false;
 		}
 		return true;
@@ -529,7 +496,6 @@ protected:
 		SSReady,
 		SSRunning
 	} _state;
-	std::function<bool()> _ready_to_print_error_check;
 	bool _is_initialized;
 	bool _is_stopped;
 	std::condition_variable _ready_to_connect_cond;
@@ -540,7 +506,6 @@ protected:
 	std::shared_ptr<Replay> _replay;
 	INetplayDialog* _dialog;
 	std::recursive_mutex _mutex;
-	IConsoleWriter _console;
 	typedef std::unique_lock<std::recursive_mutex> recursive_lock;
 };
 

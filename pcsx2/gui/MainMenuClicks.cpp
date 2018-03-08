@@ -528,7 +528,7 @@ void MainEmuFrame::_DoBootCdvdWithNetplay()
 		}
 		g_Conf->Netplay = dialog->GetSettings();
 		dialog->SetCloseEventHandler([&]() {
-			INetplayPlugin::GetInstance().Interrupt();
+			INetplayPlugin::GetInstance().EndSession();
 		});
 		g_Conf->Netplay.IsEnabled = true;
 
